@@ -14,3 +14,5 @@ dist-deploy/
 *.tar
 .claude
 presensee.zip
+.gitignore
+*.exe
