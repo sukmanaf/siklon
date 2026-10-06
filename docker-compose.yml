@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: presensee-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: absen
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123123
+      TZ: Asia/Jakarta
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Schema & seed otomatis dijalankan saat container db pertama kali dibuat
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: presensee-api
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      TZ: Asia/Jakarta
+      # Menghubungkan ke container db di dalam jaringan docker
+      DATABASE_URL: postgresql://postgres:123123@db:5432/absen
+      JWT_SECRET: super-secret-jwt-key-replace-in-production
+      SCANNER_API_KEY: presensee-scanner-api-key-2026
+      # WAJIB diisi eksplisit di sini — default di env.ts ("./storage") benar
+      # untuk dev lokal (CWD = apps/api/), tapi CWD proses di container ini
+      # /app (lihat WORKDIR di apps/api/Dockerfile), jadi default itu akan
+      # resolve ke /app/storage — BUKAN /app/apps/api/storage yang di-mount
+      # persisten di bawah. Tanpa baris ini, sesi WhatsApp (Baileys) dan
+      # foto/lampiran akan tersimpan di lapisan container yang hilang begitu
+      # containernya di-recreate (docker compose up, bukan cuma restart).
+      STORAGE_PATH: /app/apps/api/storage
+      WA_SESSION_PATH: /app/apps/api/storage/wa-session
+    depends_on:
+      - db
+    volumes:
+      # Sesi WhatsApp (Baileys) dan foto siswa WAJIB persisten di host
+      - ./apps/api/storage:/app/apps/api/storage
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:5000/api/v1
+    container_name: presensee-web
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      TZ: Asia/Jakarta
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:

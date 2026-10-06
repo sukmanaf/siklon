@@ -1,0 +1,48 @@
+# Unit systemd untuk PresenSee Scanner Agent (PC gerbang Linux).
+#
+# Pemasangan:
+#   sudo cp presensee-scanner-agent.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now presensee-scanner-agent
+#
+# Melihat log:  journalctl -u presensee-scanner-agent -f
+
+[Unit]
+Description=PresenSee Scanner Agent - presensi siswa di gerbang
+Documentation=https://github.com/sekolah/presensee
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+
+# PENTING: pengguna ini harus anggota grup 'dialout' agar boleh membaca port
+# serial. Tanpa itu agent hidup tapi semua port gagal dibuka:
+#   sudo usermod -aG dialout presensee
+User=presensee
+Group=presensee
+SupplementaryGroups=dialout
+
+WorkingDirectory=/opt/presensee-agent
+ExecStart=/usr/bin/node /opt/presensee-agent/dist/index.js
+
+# Agent harus selalu hidup: kalau mati saat jam masuk sekolah, presensi berhenti.
+Restart=always
+RestartSec=5
+
+# Jangan menyerah setelah beberapa kali gagal — internet sekolah bisa mati lama.
+StartLimitIntervalSec=0
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=presensee-agent
+
+# Pembatasan hak: agent hanya perlu membaca port serial dan menulis antreannya.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/opt/presensee-agent
+
+[Install]
+WantedBy=multi-user.target

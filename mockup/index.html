@@ -1,0 +1,1770 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SIKLON — Mockup Sistem Presensi Siswa</title>
+<style>
+:root{
+  --bg:#f1f5f9; --surface:#ffffff; --surface-2:#f8fafc; --border:#e2e8f0;
+  --text:#0f172a; --muted:#64748b; --faint:#94a3b8;
+  --primary:#4f46e5; --primary-soft:#eef2ff; --primary-ink:#3730a3;
+  --sidebar:#111827; --sidebar-ink:#cbd5e1; --sidebar-active:#1f2937;
+  --ok:#16a34a; --ok-bg:#dcfce7; --warn:#d97706; --warn-bg:#fef3c7;
+  --info:#0284c7; --info-bg:#e0f2fe; --violet:#7c3aed; --violet-bg:#ede9fe;
+  --danger:#dc2626; --danger-bg:#fee2e2; --neutral:#64748b; --neutral-bg:#f1f5f9;
+  --radius:10px; --shadow:0 1px 2px rgba(15,23,42,.06),0 4px 12px rgba(15,23,42,.05);
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+}
+:root[data-theme="dark"]{
+  --bg:#0b1120; --surface:#111827; --surface-2:#0f172a; --border:#1f2937;
+  --text:#e2e8f0; --muted:#94a3b8; --faint:#64748b;
+  --primary:#818cf8; --primary-soft:#1e1b4b; --primary-ink:#c7d2fe;
+  --sidebar:#020617; --sidebar-ink:#94a3b8; --sidebar-active:#111827;
+  --ok:#4ade80; --ok-bg:#052e16; --warn:#fbbf24; --warn-bg:#3b2506;
+  --info:#38bdf8; --info-bg:#062b3f; --violet:#a78bfa; --violet-bg:#2b1a54;
+  --danger:#f87171; --danger-bg:#3f1212; --neutral:#94a3b8; --neutral-bg:#1e293b;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 12px rgba(0,0,0,.3);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);
+  font:14px/1.5 "Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  -webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+h1,h2,h3,h4{margin:0;font-weight:650;letter-spacing:-.01em}
+table{border-collapse:collapse;width:100%}
+
+/* ---------- Shell ---------- */
+.app{display:grid;grid-template-columns:236px 1fr;min-height:100vh}
+.sidebar{background:var(--sidebar);color:var(--sidebar-ink);padding:14px 10px;
+  display:flex;flex-direction:column;gap:2px;position:sticky;top:0;height:100vh;overflow-y:auto}
+.brand{display:flex;align-items:center;gap:10px;padding:8px 10px 16px}
+.brand .logo{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,#6366f1,#22d3ee);
+  display:grid;place-items:center;font-weight:800;color:#fff;font-size:14px;flex:none}
+.brand b{color:#fff;font-size:15px;letter-spacing:.02em}
+.brand small{display:block;color:#64748b;font-size:10.5px;font-weight:500;letter-spacing:.04em}
+.navlabel{font-size:10px;text-transform:uppercase;letter-spacing:.09em;color:#4b5563;
+  padding:14px 12px 6px;font-weight:700}
+.navitem{display:flex;align-items:center;gap:10px;padding:8px 11px;border-radius:8px;
+  cursor:pointer;font-size:13.2px;color:var(--sidebar-ink);border:0;background:none;
+  width:100%;text-align:left;font-family:inherit;transition:.12s}
+.navitem:hover{background:var(--sidebar-active);color:#fff}
+.navitem.active{background:var(--primary);color:#fff;font-weight:600}
+.navitem .ic{width:16px;text-align:center;font-size:14px;opacity:.9;flex:none}
+.navitem .pill{margin-left:auto;background:#dc2626;color:#fff;border-radius:99px;
+  font-size:10px;padding:1px 6px;font-weight:700}
+.sidefoot{margin-top:auto;padding:12px 10px 4px;border-top:1px solid #1f2937;
+  display:flex;align-items:center;gap:9px}
+.sidefoot .av{width:30px;height:30px;border-radius:50%;background:#4f46e5;color:#fff;
+  display:grid;place-items:center;font-size:11.5px;font-weight:700;flex:none}
+.sidefoot .nm{font-size:12.5px;color:#e5e7eb;font-weight:600;line-height:1.25}
+.sidefoot .rl{font-size:10.5px;color:#6b7280}
+
+.main{min-width:0;display:flex;flex-direction:column}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);
+  padding:12px 22px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:20}
+.topbar h1{font-size:17px}
+.topbar .sub{color:var(--muted);font-size:12.5px;margin-top:1px}
+.spacer{margin-left:auto}
+.content{padding:22px;max-width:1420px;width:100%}
+
+/* ---------- Atoms ---------- */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:99px;
+  font-size:11px;font-weight:650;white-space:nowrap;line-height:1.6}
+.b-ok{background:var(--ok-bg);color:var(--ok)} .b-warn{background:var(--warn-bg);color:var(--warn)}
+.b-info{background:var(--info-bg);color:var(--info)} .b-vio{background:var(--violet-bg);color:var(--violet)}
+.b-dang{background:var(--danger-bg);color:var(--danger)} .b-mut{background:var(--neutral-bg);color:var(--neutral)}
+.b-pri{background:var(--primary-soft);color:var(--primary-ink)}
+
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:8px;
+  border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;
+  font-weight:550;cursor:pointer;font-family:inherit;transition:.12s;white-space:nowrap}
+.btn:hover{background:var(--surface-2);border-color:var(--faint)}
+.btn-pri{background:var(--primary);border-color:var(--primary);color:#fff}
+.btn-pri:hover{filter:brightness(1.08);background:var(--primary)}
+.btn-dang{color:var(--danger);border-color:var(--danger-bg)}
+.btn-sm{padding:4px 9px;font-size:12px;border-radius:7px}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  box-shadow:var(--shadow)}
+.card-h{padding:13px 16px;border-bottom:1px solid var(--border);display:flex;
+  align-items:center;gap:10px}
+.card-h h3{font-size:14px}
+.card-h .hint{color:var(--muted);font-size:12px}
+.card-b{padding:16px}
+.card-b.flush{padding:0}
+
+.grid{display:grid;gap:16px}
+.g4{grid-template-columns:repeat(4,1fr)} .g3{grid-template-columns:repeat(3,1fr)}
+.g2{grid-template-columns:repeat(2,1fr)} .g6{grid-template-columns:repeat(6,1fr)}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:14px 16px;box-shadow:var(--shadow)}
+.stat .lb{color:var(--muted);font-size:11.5px;font-weight:600;text-transform:uppercase;
+  letter-spacing:.05em;display:flex;align-items:center;gap:6px}
+.stat .vl{font-size:26px;font-weight:750;margin-top:5px;letter-spacing:-.02em}
+.stat .dt{font-size:11.5px;color:var(--muted);margin-top:2px}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:none}
+
+th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;
+  color:var(--muted);font-weight:700;padding:9px 12px;border-bottom:1px solid var(--border);
+  background:var(--surface-2);position:sticky;top:0;white-space:nowrap}
+td{padding:9px 12px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle}
+tbody tr:hover{background:var(--surface-2)}
+tbody tr:last-child td{border-bottom:0}
+.tbl-wrap{overflow-x:auto}
+.num{font-variant-numeric:tabular-nums;font-family:var(--mono);font-size:12.5px}
+
+.inp,select.inp{padding:7px 11px;border:1px solid var(--border);border-radius:8px;
+  background:var(--surface);color:var(--text);font:inherit;font-size:13px;min-width:0}
+.inp:focus{outline:2px solid var(--primary);outline-offset:-1px;border-color:transparent}
+label.fl{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px}
+.field{margin-bottom:13px}
+
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--primary-soft);
+  color:var(--primary-ink);display:grid;place-items:center;font-weight:700;font-size:12px;flex:none}
+.avatar.lg{width:76px;height:76px;font-size:24px;border-radius:14px}
+.avatar.xl{width:118px;height:118px;font-size:38px;border-radius:16px}
+.who{display:flex;align-items:center;gap:10px}
+.who .nm{font-weight:600;line-height:1.3}
+.who .mt{color:var(--muted);font-size:11.5px}
+
+.note{background:var(--primary-soft);border:1px solid color-mix(in srgb,var(--primary) 22%,transparent);
+  color:var(--primary-ink);border-radius:9px;padding:11px 14px;font-size:12.6px;line-height:1.6}
+.note b{font-weight:700}
+.hr{height:1px;background:var(--border);margin:16px 0}
+.screen{display:none} .screen.on{display:block}
+@keyframes pindai{0%,100%{top:24%}50%{top:74%}}
+.mockflag{background:#fbbf24;color:#78350f;font-size:10px;font-weight:800;padding:2px 7px;
+  border-radius:5px;letter-spacing:.06em}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:16px}
+.tab{padding:8px 14px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;
+  border-bottom:2px solid transparent;background:none;border-top:0;border-left:0;border-right:0;
+  font-family:inherit}
+.tab.sel{color:var(--primary);border-bottom-color:var(--primary)}
+.bar{height:7px;border-radius:99px;background:var(--neutral-bg);overflow:hidden;min-width:70px}
+.bar i{display:block;height:100%;border-radius:99px}
+@media(max-width:1100px){.g4,.g6{grid-template-columns:repeat(2,1fr)}.g3,.g2{grid-template-columns:1fr}}
+@media(max-width:860px){.app{grid-template-columns:1fr}.sidebar{display:none}}
+</style>
+</head>
+<body>
+
+<!-- ================= LOGIN ================= -->
+<div id="s-login" class="screen" style="min-height:100vh;display:none;place-items:center;
+     background:radial-gradient(1200px 600px at 20% 0%,#1e1b4b,#020617)">
+  <div style="width:100%;max-width:1000px;display:grid;grid-template-columns:1.1fr 1fr;
+       gap:0;border-radius:18px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.5);margin:24px">
+    <div style="padding:48px 44px;background:linear-gradient(150deg,#4338ca,#0e7490);color:#fff">
+      <div style="display:flex;align-items:center;gap:11px">
+        <div style="width:38px;height:38px;border-radius:11px;background:rgba(255,255,255,.18);
+             display:grid;place-items:center;font-weight:800">SK</div>
+        <div><b style="font-size:18px">SIKLON</b>
+          <div style="font-size:11px;opacity:.75;letter-spacing:.06em">SISTEM PRESENSI SISWA</div></div>
+      </div>
+      <h2 style="font-size:27px;margin-top:44px;line-height:1.3;font-weight:700">
+        Presensi cepat,<br>orang tua langsung tahu.</h2>
+      <p style="opacity:.85;margin-top:14px;font-size:13.5px;line-height:1.75;max-width:330px">
+        Scan barcode kartu siswa di beberapa gerbang sekaligus. Notifikasi WhatsApp
+        terkirim otomatis ke wali murid dalam hitungan detik.</p>
+      <div style="margin-top:40px;display:grid;gap:11px;font-size:13px">
+        <div style="display:flex;gap:9px;align-items:center"><span>⚡</span> Multi-scanner dalam 1 PC</div>
+        <div style="display:flex;gap:9px;align-items:center"><span>💬</span> Notifikasi WhatsApp otomatis</div>
+        <div style="display:flex;gap:9px;align-items:center"><span>📊</span> Laporan harian &amp; bulanan</div>
+      </div>
+      <div style="margin-top:56px;font-size:11px;opacity:.6">SMP Negeri 1 Contoh • v1.0</div>
+    </div>
+    <div style="padding:48px 40px;background:var(--surface)">
+      <h2 style="font-size:20px">Masuk</h2>
+      <p style="color:var(--muted);font-size:13px;margin:6px 0 26px">
+        Gunakan akun yang diberikan administrator sekolah.</p>
+      <div class="field"><label class="fl">Username / Email</label>
+        <input class="inp" style="width:100%" value="admin" placeholder="nama pengguna"></div>
+      <div class="field"><label class="fl">Password</label>
+        <input class="inp" style="width:100%" type="password" value="rahasia123"></div>
+      <div class="row" style="justify-content:space-between;margin:4px 0 22px">
+        <label style="font-size:12.5px;color:var(--muted);display:flex;gap:7px;align-items:center">
+          <input type="checkbox" checked> Ingat perangkat ini</label>
+        <a style="font-size:12.5px;color:var(--primary);font-weight:600">Lupa password?</a>
+      </div>
+      <button class="btn btn-pri" style="width:100%;justify-content:center;padding:11px"
+              onclick="go('dashboard')">Masuk</button>
+      <div class="note" style="margin-top:22px">
+        <b>Keamanan:</b> 5× gagal login mengunci akun 15 menit. Password baru wajib diganti
+        saat pertama kali masuk.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= APP SHELL ================= -->
+<div class="app" id="shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">SK</div>
+      <div><b>SIKLON</b><small>PRESENSI SISWA</small></div>
+    </div>
+    <div class="navlabel">Utama</div>
+    <button class="navitem active" data-s="dashboard"><span class="ic">▤</span> Dashboard</button>
+    <button class="navitem" data-s="scan"><span class="ic">⌾</span> Konsol Scan
+      <span class="pill">LIVE</span></button>
+    <div class="navlabel">Master Data</div>
+    <button class="navitem" data-s="siswa"><span class="ic">☺</span> Siswa</button>
+    <button class="navitem" data-s="detail"><span class="ic">◧</span> Detail Siswa</button>
+    <button class="navitem" data-s="kelas"><span class="ic">▦</span> Kelas</button>
+    <div class="navlabel">Presensi</div>
+    <button class="navitem" data-s="harian"><span class="ic">▤</span> Laporan Harian</button>
+    <button class="navitem" data-s="bulanan"><span class="ic">▥</span> Laporan Bulanan</button>
+    <div class="navlabel">Sistem</div>
+    <button class="navitem" data-s="scanner"><span class="ic">⌸</span> Scanner</button>
+    <button class="navitem" data-s="wa"><span class="ic">✉</span> WhatsApp</button>
+    <button class="navitem" data-s="pengaturan"><span class="ic">⚙</span> Pengaturan</button>
+    <button class="navitem" data-s="users"><span class="ic">◔</span> Pengguna
+      <span class="pill" style="background:#4f46e5">SA</span></button>
+    <div class="sidefoot">
+      <div class="av">AD</div>
+      <div><div class="nm">Administrator</div><div class="rl">Super Admin</div></div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div><h1 id="pgTitle">Dashboard</h1><div class="sub" id="pgSub">Selasa, 8 September 2026</div></div>
+      <div class="spacer"></div>
+      <span class="mockflag">MOCKUP</span>
+      <span class="badge b-ok"><span class="dot" style="background:var(--ok)"></span> WA Tersambung</span>
+      <span class="badge b-pri">3 scanner online</span>
+      <button class="btn btn-sm" onclick="toggleTheme()" title="Ganti tema">◐</button>
+      <button class="btn btn-sm" onclick="go('login')">Keluar</button>
+    </header>
+    <div class="content">
+
+<!-- ---------- DASHBOARD ---------- -->
+<section class="screen on" id="s-dashboard">
+  <div class="grid g4" style="margin-bottom:16px">
+    <div class="stat"><div class="lb"><span class="dot" style="background:var(--ok)"></span>Hadir</div>
+      <div class="vl" style="color:var(--ok)">1.184</div><div class="dt">86,4% dari 1.370 siswa</div></div>
+    <div class="stat"><div class="lb"><span class="dot" style="background:var(--warn)"></span>Terlambat</div>
+      <div class="vl" style="color:var(--warn)">73</div><div class="dt">▲ 12 dibanding kemarin</div></div>
+    <div class="stat"><div class="lb"><span class="dot" style="background:var(--info)"></span>Izin / Sakit</div>
+      <div class="vl" style="color:var(--info)">64</div><div class="dt">41 izin · 23 sakit</div></div>
+    <div class="stat"><div class="lb"><span class="dot" style="background:var(--danger)"></span>Alpa</div>
+      <div class="vl" style="color:var(--danger)">49</div><div class="dt">WA terkirim ke 47 wali</div></div>
+  </div>
+
+  <div class="grid" style="grid-template-columns:1.55fr 1fr;margin-bottom:16px">
+    <div class="card">
+      <div class="card-h"><h3>Tren Kehadiran 14 Hari</h3>
+        <span class="hint">persentase hadir + terlambat</span>
+        <div class="spacer"></div><button class="btn btn-sm">Bulan ini ▾</button></div>
+      <div class="card-b">
+        <svg viewBox="0 0 620 190" style="width:100%;height:190px">
+          <defs><linearGradient id="ga" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#4f46e5" stop-opacity=".28"/>
+            <stop offset="100%" stop-color="#4f46e5" stop-opacity="0"/></linearGradient></defs>
+          <g stroke="var(--border)" stroke-width="1">
+            <line x1="34" y1="20" x2="614" y2="20"/><line x1="34" y1="61" x2="614" y2="61"/>
+            <line x1="34" y1="102" x2="614" y2="102"/><line x1="34" y1="143" x2="614" y2="143"/>
+            <line x1="34" y1="160" x2="614" y2="160"/></g>
+          <g fill="var(--faint)" font-size="9" font-family="monospace">
+            <text x="4" y="24">100</text><text x="8" y="65">95</text>
+            <text x="8" y="106">90</text><text x="8" y="147">85</text></g>
+          <path fill="url(#ga)" d="M44,72 L88,60 L132,88 L176,54 L220,66 L264,45 L308,96 L352,70
+            L396,58 L440,80 L484,50 L528,62 L572,42 L604,55 L604,160 L44,160 Z"/>
+          <polyline fill="none" stroke="#4f46e5" stroke-width="2.4" stroke-linejoin="round"
+            points="44,72 88,60 132,88 176,54 220,66 264,45 308,96 352,70 396,58 440,80 484,50 528,62 572,42 604,55"/>
+          <g fill="#4f46e5">
+            <circle cx="308" cy="96" r="4"/><circle cx="572" cy="42" r="4"/><circle cx="604" cy="55" r="3.5"/></g>
+          <text x="290" y="118" font-size="9.5" fill="var(--danger)" font-weight="700">89,1% ↓ hujan deras</text>
+        </svg>
+        <div class="row" style="justify-content:space-between;color:var(--faint);font-size:10.5px;
+             font-family:var(--mono);padding:0 6px">
+          <span>18/8</span><span>21/8</span><span>25/8</span><span>28/8</span><span>1/9</span>
+          <span>4/9</span><span>8/9</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><h3>Aktivitas Scan Terakhir</h3>
+        <div class="spacer"></div><span class="badge b-ok">● live</span></div>
+      <div class="card-b flush" style="max-height:274px;overflow:auto">
+        <table><tbody>
+          <tr><td style="width:52px" class="num">07:41</td>
+            <td><b>Rizki Maulana</b><div style="color:var(--muted);font-size:11.5px">IX-B · GATE-A</div></td>
+            <td style="text-align:right"><span class="badge b-ok">HADIR</span></td></tr>
+          <tr><td class="num">07:41</td>
+            <td><b>Nabila Az-Zahra</b><div style="color:var(--muted);font-size:11.5px">VII-C · GATE-B</div></td>
+            <td style="text-align:right"><span class="badge b-ok">HADIR</span></td></tr>
+          <tr><td class="num">07:22</td>
+            <td><b>Andi Pratama</b><div style="color:var(--muted);font-size:11.5px">VII-A · GATE-A</div></td>
+            <td style="text-align:right"><span class="badge b-warn">TELAT 12′</span></td></tr>
+          <tr><td class="num">07:19</td>
+            <td><b>Dimas Anggara</b><div style="color:var(--muted);font-size:11.5px">VIII-A · GATE-A</div></td>
+            <td style="text-align:right"><span class="badge b-warn">TELAT 9′</span></td></tr>
+          <tr><td class="num">07:08</td>
+            <td><b style="color:var(--danger)">NIS tidak terdaftar</b>
+              <div style="color:var(--muted);font-size:11.5px">9999001 · GATE-B</div></td>
+            <td style="text-align:right"><span class="badge b-dang">DITOLAK</span></td></tr>
+          <tr><td class="num">07:02</td>
+            <td><b>Bunga Lestari</b><div style="color:var(--muted);font-size:11.5px">VII-A · GATE-A</div></td>
+            <td style="text-align:right"><span class="badge b-ok">HADIR</span></td></tr>
+        </tbody></table>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid" style="grid-template-columns:1fr 1fr">
+    <div class="card">
+      <div class="card-h"><h3>Kelas Perlu Perhatian</h3>
+        <span class="hint">kehadiran terendah hari ini</span></div>
+      <div class="card-b flush"><div class="tbl-wrap"><table>
+        <thead><tr><th>Kelas</th><th>Wali Kelas</th><th>Kehadiran</th><th style="text-align:right">Alpa</th></tr></thead>
+        <tbody>
+          <tr><td><b>VIII-C</b></td><td style="color:var(--muted)">Sri Wahyuni, S.Pd.</td>
+            <td><div class="row" style="gap:8px"><div class="bar" style="flex:1">
+              <i style="width:74%;background:var(--danger)"></i></div><span class="num">74%</span></div></td>
+            <td style="text-align:right"><span class="badge b-dang">7</span></td></tr>
+          <tr><td><b>IX-A</b></td><td style="color:var(--muted)">Budi Santoso, M.Pd.</td>
+            <td><div class="row" style="gap:8px"><div class="bar" style="flex:1">
+              <i style="width:81%;background:var(--warn)"></i></div><span class="num">81%</span></div></td>
+            <td style="text-align:right"><span class="badge b-warn">5</span></td></tr>
+          <tr><td><b>VII-D</b></td><td style="color:var(--muted)">Dewi Anggraini, S.Pd.</td>
+            <td><div class="row" style="gap:8px"><div class="bar" style="flex:1">
+              <i style="width:88%;background:var(--warn)"></i></div><span class="num">88%</span></div></td>
+            <td style="text-align:right"><span class="badge b-warn">3</span></td></tr>
+          <tr><td><b>VIII-A</b></td><td style="color:var(--muted)">Ahmad Fauzi, S.Kom.</td>
+            <td><div class="row" style="gap:8px"><div class="bar" style="flex:1">
+              <i style="width:94%;background:var(--ok)"></i></div><span class="num">94%</span></div></td>
+            <td style="text-align:right"><span class="badge b-mut">1</span></td></tr>
+        </tbody></table></div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><h3>Status Sistem</h3><div class="spacer"></div>
+        <button class="btn btn-sm" onclick="go('wa')">Kelola</button></div>
+      <div class="card-b" style="display:grid;gap:11px">
+        <div class="row" style="justify-content:space-between">
+          <span class="row" style="gap:8px"><span class="dot" style="background:var(--ok)"></span>
+            GATE-A · Gerbang Utama</span>
+          <span style="color:var(--muted);font-size:12px">412 scan hari ini</span></div>
+        <div class="row" style="justify-content:space-between">
+          <span class="row" style="gap:8px"><span class="dot" style="background:var(--ok)"></span>
+            GATE-B · Gerbang Samping</span>
+          <span style="color:var(--muted);font-size:12px">386 scan hari ini</span></div>
+        <div class="row" style="justify-content:space-between">
+          <span class="row" style="gap:8px"><span class="dot" style="background:var(--ok)"></span>
+            GATE-C · Gerbang Belakang</span>
+          <span style="color:var(--muted);font-size:12px">142 scan hari ini</span></div>
+        <div class="hr" style="margin:3px 0"></div>
+        <div class="row" style="justify-content:space-between">
+          <span class="row" style="gap:8px"><span class="dot" style="background:var(--ok)"></span>
+            WhatsApp (Baileys) · 6281234567890</span>
+          <span class="badge b-ok">Tersambung</span></div>
+        <div class="row" style="justify-content:space-between">
+          <span class="row" style="gap:8px"><span class="dot" style="background:var(--warn)"></span>
+            Antrean pesan</span>
+          <span style="color:var(--muted);font-size:12px">18 menunggu · 2 gagal</span></div>
+        <div class="row" style="justify-content:space-between">
+          <span class="row" style="gap:8px"><span class="dot" style="background:var(--ok)"></span>
+            Backup database</span>
+          <span style="color:var(--muted);font-size:12px">02:00 · berhasil</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- KONSOL SCAN ---------- -->
+<section class="screen" id="s-scan">
+  <div class="card" style="margin-bottom:16px"><div class="card-b" style="padding:11px 16px">
+    <div class="row">
+      <span style="font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.04em">SUMBER INPUT</span>
+      <button class="btn btn-sm btn-pri" onclick="modeInput('serial')" id="btnSerial">⌸ Scanner Serial</button>
+      <button class="btn btn-sm" onclick="modeInput('kamera')" id="btnKamera">▣ Kamera (webcam / HP)</button>
+      <span id="labelSumber" class="badge b-mut">3 scanner serial aktif</span>
+      <div class="spacer"></div>
+      <select class="inp btn-sm" id="pilihKamera" hidden>
+        <option>Webcam Laptop (Integrated)</option>
+        <option>Redmi Note 13 — USB webcam</option>
+        <option>DroidCam Source 1</option>
+      </select>
+    </div>
+  </div></div>
+
+  <!-- pratinjau kamera (mode development) -->
+  <div id="panelKamera" class="card" hidden style="margin-bottom:16px">
+    <div class="card-b" style="display:grid;grid-template-columns:300px 1fr;gap:20px;align-items:center">
+      <div style="position:relative;aspect-ratio:4/3;border-radius:12px;overflow:hidden;
+           background:#0f172a;display:grid;place-items:center">
+        <div style="color:#334155;font-size:11px;letter-spacing:.1em">PRATINJAU KAMERA</div>
+        <div style="position:absolute;inset:22% 24%;border-radius:8px;
+             box-shadow:0 0 0 2px rgba(34,197,94,.9),0 0 0 999px rgba(0,0,0,.45)"></div>
+        <div style="position:absolute;left:24%;right:24%;height:2px;background:#22c55e;
+             box-shadow:0 0 12px #22c55e;animation:pindai 2s ease-in-out infinite"></div>
+        <div style="position:absolute;top:9px;left:11px;font-size:10px;color:#22c55e;
+             font-family:var(--mono)">● REC 1280×960 · 30fps</div>
+      </div>
+      <div>
+        <h3 style="font-size:15px">Mode kamera aktif</h3>
+        <p style="color:var(--muted);font-size:13px;line-height:1.7;margin:7px 0 14px">
+          Arahkan QR pada kartu siswa ke dalam bingkai hijau. Pembacaan dilakukan di browser,
+          lalu dikirim ke endpoint yang sama dengan scanner serial — jadi mesin presensi,
+          penentuan status, dan pengiriman WhatsApp berjalan persis sama.
+        </p>
+        <div class="row" style="gap:20px">
+          <div><div style="font-size:11px;color:var(--muted);font-weight:600">PENDEKODE</div>
+            <div style="font-weight:650;font-size:13.5px;margin-top:3px">qr-scanner (fallback)</div>
+            <div style="font-size:11px;color:var(--warn);margin-top:2px">BarcodeDetector tidak ada di Linux</div></div>
+          <div><div style="font-size:11px;color:var(--muted);font-weight:600">WAKTU BACA</div>
+            <div class="num" style="font-weight:700;font-size:16px;margin-top:3px">± 240 ms</div></div>
+          <div><div style="font-size:11px;color:var(--muted);font-weight:600">GERBANG</div>
+            <div style="font-weight:650;font-size:13.5px;margin-top:3px">CAM-DEV</div></div>
+        </div>
+        <div class="note" style="margin-top:14px">
+          <b>Ingat:</b> kamera hanya bisa dibuka di <code>localhost</code> atau <code>https://</code>.
+          Membuka aplikasi dari HP lewat <code>http://192.168.x.x</code> akan gagal tanpa pesan jelas —
+          pakai <code>next dev --experimental-https</code> atau cloudflared.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid" style="grid-template-columns:1.25fr 1fr;margin-bottom:16px">
+    <!-- Kartu hasil scan besar -->
+    <div class="card" style="border:2px solid var(--ok);position:relative;overflow:hidden">
+      <div style="position:absolute;inset:0;background:linear-gradient(120deg,
+           color-mix(in srgb,var(--ok) 9%,transparent),transparent 60%)"></div>
+      <div class="card-b" style="position:relative;display:flex;gap:20px;align-items:center;padding:22px">
+        <div class="avatar xl" style="background:var(--ok-bg);color:var(--ok)">RM</div>
+        <div style="flex:1;min-width:0">
+          <div class="row" style="gap:8px"><span class="badge b-ok" style="font-size:12px;padding:3px 11px">
+            ✓ HADIR</span><span class="badge b-mut">GATE-A · Gerbang Utama</span></div>
+          <h2 style="font-size:27px;margin-top:9px;letter-spacing:-.02em">Rizki Maulana</h2>
+          <div style="color:var(--muted);font-size:13.5px;margin-top:3px">
+            NIS 2024118 · Kelas IX-B · Wali: Sulastri</div>
+          <div class="row" style="margin-top:14px;gap:20px">
+            <div><div style="font-size:11px;color:var(--muted);font-weight:600">JAM MASUK</div>
+              <div class="num" style="font-size:22px;font-weight:700">07:41:22</div></div>
+            <div><div style="font-size:11px;color:var(--muted);font-weight:600">STATUS WA</div>
+              <div style="font-size:14px;font-weight:650;color:var(--ok);margin-top:5px">
+                ✓ Terkirim ke 0857****1204</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status scanner -->
+    <div class="card">
+      <div class="card-h"><h3>Scanner Terhubung</h3><div class="spacer"></div>
+        <span class="badge b-ok">Agent v1.0.3 · online</span></div>
+      <div class="card-b" style="display:grid;gap:10px">
+        <div style="border:1px solid var(--border);border-radius:9px;padding:11px 13px;
+             display:flex;align-items:center;gap:11px">
+          <span class="dot" style="background:var(--ok);width:10px;height:10px"></span>
+          <div style="flex:1"><b style="font-size:13px">GATE-A</b>
+            <div style="color:var(--muted);font-size:11.5px">COM3 · Gerbang Utama</div></div>
+          <div style="text-align:right"><div class="num" style="font-weight:700">412</div>
+            <div style="font-size:10.5px;color:var(--muted)">scan</div></div>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:9px;padding:11px 13px;
+             display:flex;align-items:center;gap:11px">
+          <span class="dot" style="background:var(--ok);width:10px;height:10px"></span>
+          <div style="flex:1"><b style="font-size:13px">GATE-B</b>
+            <div style="color:var(--muted);font-size:11.5px">COM4 · Gerbang Samping</div></div>
+          <div style="text-align:right"><div class="num" style="font-weight:700">386</div>
+            <div style="font-size:10.5px;color:var(--muted)">scan</div></div>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:9px;padding:11px 13px;
+             display:flex;align-items:center;gap:11px">
+          <span class="dot" style="background:var(--ok);width:10px;height:10px"></span>
+          <div style="flex:1"><b style="font-size:13px">GATE-C</b>
+            <div style="color:var(--muted);font-size:11.5px">COM5 · Gerbang Belakang</div></div>
+          <div style="text-align:right"><div class="num" style="font-weight:700">142</div>
+            <div style="font-size:10.5px;color:var(--muted)">scan</div></div>
+        </div>
+        <div class="hr" style="margin:4px 0"></div>
+        <div class="row">
+          <button class="btn btn-sm">🔊 Bunyi: aktif</button>
+          <button class="btn btn-sm">⛶ Layar penuh</button>
+          <button class="btn btn-sm btn-pri">+ Input Manual</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-h"><h3>Riwayat Scan Hari Ini</h3>
+      <span class="hint">798 scan · 2 ditolak</span>
+      <div class="spacer"></div>
+      <select class="inp btn-sm"><option>Semua scanner</option><option>GATE-A</option>
+        <option>GATE-B</option><option>GATE-C</option></select>
+      <button class="btn btn-sm">Ekspor</button>
+    </div>
+    <div class="card-b flush"><div class="tbl-wrap"><table>
+      <thead><tr><th style="width:76px">Jam</th><th>Siswa</th><th>Kelas</th><th>Titik Scan</th>
+        <th>Status</th><th>Notifikasi WA</th></tr></thead>
+      <tbody>
+        <tr><td class="num">07:41:22</td>
+          <td><div class="who"><div class="avatar">RM</div>
+            <div><div class="nm">Rizki Maulana</div><div class="mt">2024118</div></div></div></td>
+          <td>IX-B</td><td><span class="badge b-mut">GATE-A</span></td><td><span class="badge b-ok">HADIR</span></td>
+          <td><span style="color:var(--ok);font-size:12.5px">✓ Terkirim 07:41</span></td></tr>
+        <tr><td class="num">07:41:03</td>
+          <td><div class="who"><div class="avatar">NA</div>
+            <div><div class="nm">Nabila Az-Zahra</div><div class="mt">2026044</div></div></div></td>
+          <td>VII-C</td><td><span class="badge b-mut">GATE-B</span></td><td><span class="badge b-ok">HADIR</span></td>
+          <td><span style="color:var(--ok);font-size:12.5px">✓ Terkirim 07:41</span></td></tr>
+        <tr><td class="num">07:22:14</td>
+          <td><div class="who"><div class="avatar" style="background:var(--warn-bg);color:var(--warn)">AP</div>
+            <div><div class="nm">Andi Pratama</div><div class="mt">2026071</div></div></div></td>
+          <td>VII-A</td><td><span class="badge b-mut">GATE-A</span></td>
+          <td><span class="badge b-warn">TERLAMBAT 12′</span></td>
+          <td><span style="color:var(--ok);font-size:12.5px">✓ Terkirim 07:22</span></td></tr>
+        <tr><td class="num">07:19:48</td>
+          <td><div class="who"><div class="avatar" style="background:var(--warn-bg);color:var(--warn)">DA</div>
+            <div><div class="nm">Dimas Anggara</div><div class="mt">2025019</div></div></div></td>
+          <td>VIII-A</td><td><span class="badge b-mut">GATE-A</span></td>
+          <td><span class="badge b-warn">TERLAMBAT 9′</span></td>
+          <td><span style="color:var(--danger);font-size:12.5px">✗ Gagal · coba lagi (2/3)</span></td></tr>
+        <tr style="background:color-mix(in srgb,var(--danger) 5%,transparent)">
+          <td class="num">07:08:31</td>
+          <td><div class="who"><div class="avatar" style="background:var(--danger-bg);color:var(--danger)">?</div>
+            <div><div class="nm" style="color:var(--danger)">NIS tidak terdaftar</div>
+            <div class="mt" style="font-family:var(--mono)">9999001</div></div></div></td>
+          <td>—</td><td><span class="badge b-mut">GATE-B</span></td>
+          <td><span class="badge b-dang">DITOLAK</span></td>
+          <td style="color:var(--faint);font-size:12.5px">—</td></tr>
+        <tr><td class="num">07:02:55</td>
+          <td><div class="who"><div class="avatar">BL</div>
+            <div><div class="nm">Bunga Lestari</div><div class="mt">2026072</div></div></div></td>
+          <td>VII-A</td><td><span class="badge b-mut">GATE-A</span></td><td><span class="badge b-ok">HADIR</span></td>
+          <td><span style="color:var(--ok);font-size:12.5px">✓ Terkirim 07:03</span></td></tr>
+        <tr style="opacity:.6"><td class="num">07:02:51</td>
+          <td><div class="who"><div class="avatar">BL</div>
+            <div><div class="nm">Bunga Lestari</div><div class="mt">2026072</div></div></div></td>
+          <td>VII-A</td><td><span class="badge b-mut">GATE-A</span></td>
+          <td><span class="badge b-mut">DUPLIKAT · diabaikan</span></td>
+          <td style="color:var(--faint);font-size:12.5px">—</td></tr>
+      </tbody></table></div></div>
+  </div>
+
+  <div class="note" style="margin-top:16px">
+    <b>Cara kerja multi-scanner:</b> tiap scanner diset ke mode <i>USB Virtual COM Port</i> sehingga
+    muncul sebagai port terpisah (COM3/COM4/COM5). Scanner Agent membuka semua port sekaligus,
+    jadi sistem tahu persis scan datang dari gerbang mana — dan halaman ini tidak perlu dalam
+    keadaan fokus. Bila internet mati, agent menyimpan antrean lokal dan mengirim ulang otomatis.
+    <br><br><b>Isi QR = NIS siswa.</b> Karena NIS bisa ditebak, foto siswa sengaja ditampilkan besar
+    di layar ini supaya petugas gerbang langsung melihat kalau wajahnya tidak cocok.
+  </div>
+</section>
+
+<!-- ---------- DATA SISWA ---------- -->
+<section class="screen" id="s-siswa">
+  <div class="card" style="margin-bottom:16px"><div class="card-b">
+    <div class="row">
+      <input class="inp" style="flex:1;min-width:200px" placeholder="🔍 Cari nama atau NIS…">
+      <select class="inp"><option>Semua kelas</option><option>VII-A</option><option>VII-B</option>
+        <option>VIII-A</option><option>IX-B</option></select>
+      <select class="inp"><option>Status: Aktif</option><option>Lulus</option><option>Pindah</option></select>
+      <div class="spacer"></div>
+      <button class="btn">⭳ Import Excel</button>
+      <button class="btn">🖨 Cetak QR Massal</button>
+      <button class="btn btn-pri">+ Tambah Siswa</button>
+    </div>
+  </div></div>
+
+  <div class="card">
+    <div class="card-h"><h3>Data Siswa</h3>
+      <span class="hint">1.370 siswa aktif · menampilkan 1–8</span>
+      <div class="spacer"></div><span class="badge b-warn">12 kartu QR belum dicetak</span></div>
+    <div class="card-b flush"><div class="tbl-wrap"><table>
+      <thead><tr><th style="width:34px"><input type="checkbox"></th><th>NIS</th><th>Nama Siswa</th>
+        <th>Kelas</th><th>Wali Murid</th><th>Nomor WA</th><th>QR Kartu</th>
+        <th>Kehadiran (bln ini)</th><th></th></tr></thead>
+      <tbody>
+        <tr><td><input type="checkbox"></td><td class="num">2026071</td>
+          <td><div class="who"><div class="avatar">AP</div><div>
+            <div class="nm">Andi Pratama</div><div class="mt">—</div></div></div></td>
+          <td><span class="badge b-pri">VII-A</span></td>
+          <td>Sutrisno</td>
+          <td class="num">0812****7890</td><td><span class="badge b-ok">✓ tercetak</span></td>
+          <td><div class="row" style="gap:8px"><div class="bar" style="width:64px">
+            <i style="width:90%;background:var(--ok)"></i></div><span class="num">90%</span></div></td>
+          <td><button class="btn btn-sm" onclick="go('detail')">Detail</button></td></tr>
+        <tr><td><input type="checkbox"></td><td class="num">2026072</td>
+          <td><div class="who"><div class="avatar">BL</div><div>
+            <div class="nm">Bunga Lestari</div><div class="mt">—</div></div></div></td>
+          <td><span class="badge b-pri">VII-A</span></td>
+          <td>Rina Marlina</td>
+          <td class="num">0813****4521</td><td><span class="badge b-ok">✓ tercetak</span></td>
+          <td><div class="row" style="gap:8px"><div class="bar" style="width:64px">
+            <i style="width:100%;background:var(--ok)"></i></div><span class="num">100%</span></div></td>
+          <td><button class="btn btn-sm" onclick="go('detail')">Detail</button></td></tr>
+        <tr><td><input type="checkbox"></td><td class="num">2026073</td>
+          <td><div class="who"><div class="avatar">CD</div><div>
+            <div class="nm">Citra Dewi</div><div class="mt">—</div></div></div></td>
+          <td><span class="badge b-pri">VII-A</span></td>
+          <td>Hendra Gunawan</td>
+          <td class="num">0856****1180</td><td><span class="badge b-ok">✓ tercetak</span></td>
+          <td><div class="row" style="gap:8px"><div class="bar" style="width:64px">
+            <i style="width:86%;background:var(--warn)"></i></div><span class="num">86%</span></div></td>
+          <td><button class="btn btn-sm" onclick="go('detail')">Detail</button></td></tr>
+        <tr><td><input type="checkbox"></td><td class="num">2026074</td>
+          <td><div class="who"><div class="avatar" style="background:var(--danger-bg);color:var(--danger)">DA</div>
+            <div><div class="nm">Dimas Anggara</div><div class="mt">—</div></div></div></td>
+          <td><span class="badge b-pri">VIII-A</span></td>
+          <td>Wahyu Setiawan</td>
+          <td class="num" style="color:var(--danger)">0899****0001 ⚠</td>
+          <td><span class="badge b-ok">✓ tercetak</span></td>
+          <td><div class="row" style="gap:8px"><div class="bar" style="width:64px">
+            <i style="width:71%;background:var(--danger)"></i></div><span class="num">71%</span></div></td>
+          <td><button class="btn btn-sm" onclick="go('detail')">Detail</button></td></tr>
+        <tr><td><input type="checkbox"></td><td class="num">2026044</td>
+          <td><div class="who"><div class="avatar">NA</div><div>
+            <div class="nm">Nabila Az-Zahra</div><div class="mt">—</div></div></div></td>
+          <td><span class="badge b-pri">VII-C</span></td>
+          <td>Siti Aminah</td>
+          <td class="num">0821****9932</td><td><span class="badge b-ok">✓ tercetak</span></td>
+          <td><div class="row" style="gap:8px"><div class="bar" style="width:64px">
+            <i style="width:96%;background:var(--ok)"></i></div><span class="num">96%</span></div></td>
+          <td><button class="btn btn-sm" onclick="go('detail')">Detail</button></td></tr>
+        <tr><td><input type="checkbox"></td><td class="num">2024118</td>
+          <td><div class="who"><div class="avatar">RM</div><div>
+            <div class="nm">Rizki Maulana</div><div class="mt">—</div></div></div></td>
+          <td><span class="badge b-pri">IX-B</span></td>
+          <td>Sulastri</td>
+          <td class="num">0857****1204</td><td><span class="badge b-ok">✓ tercetak</span></td>
+          <td><div class="row" style="gap:8px"><div class="bar" style="width:64px">
+            <i style="width:93%;background:var(--ok)"></i></div><span class="num">93%</span></div></td>
+          <td><button class="btn btn-sm" onclick="go('detail')">Detail</button></td></tr>
+        <tr><td><input type="checkbox"></td><td class="num">2025019</td>
+          <td><div class="who"><div class="avatar">FR</div><div>
+            <div class="nm">Fajar Ramadhan</div><div class="mt">—</div></div></div></td>
+          <td><span class="badge b-pri">VIII-C</span></td>
+          <td>Iwan Kurniawan</td>
+          <td class="num">0878****4432</td>
+          <td><span class="badge b-warn">belum dicetak</span></td>
+          <td><div class="row" style="gap:8px"><div class="bar" style="width:64px">
+            <i style="width:88%;background:var(--warn)"></i></div><span class="num">88%</span></div></td>
+          <td><button class="btn btn-sm" onclick="go('detail')">Detail</button></td></tr>
+        <tr><td><input type="checkbox"></td><td class="num">2025020</td>
+          <td><div class="who"><div class="avatar">GS</div><div>
+            <div class="nm">Gita Safitri</div><div class="mt">—</div></div></div></td>
+          <td><span class="badge b-pri">VIII-C</span></td>
+          <td>Endang Susilowati</td>
+          <td class="num">0813****7761</td><td><span class="badge b-ok">✓ tercetak</span></td>
+          <td><div class="row" style="gap:8px"><div class="bar" style="width:64px">
+            <i style="width:98%;background:var(--ok)"></i></div><span class="num">98%</span></div></td>
+          <td><button class="btn btn-sm" onclick="go('detail')">Detail</button></td></tr>
+      </tbody></table></div></div>
+    <div class="card-h" style="border-bottom:0;border-top:1px solid var(--border)">
+      <span class="hint">Halaman 1 dari 172</span><div class="spacer"></div>
+      <button class="btn btn-sm">‹ Sebelumnya</button>
+      <button class="btn btn-sm btn-pri">1</button><button class="btn btn-sm">2</button>
+      <button class="btn btn-sm">3</button><button class="btn btn-sm">Berikutnya ›</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- DETAIL SISWA ---------- -->
+<section class="screen" id="s-detail">
+  <button class="btn btn-sm" style="margin-bottom:14px" onclick="go('siswa')">‹ Kembali ke Data Siswa</button>
+  <div class="grid" style="grid-template-columns:320px 1fr">
+    <div style="display:grid;gap:16px;align-content:start">
+      <div class="card"><div class="card-b" style="text-align:center">
+        <div class="avatar xl" style="margin:0 auto 14px">AP</div>
+        <h2 style="font-size:19px">Andi Pratama</h2>
+        <div style="color:var(--muted);font-size:13px;margin-top:3px">NIS 2026071</div>
+        <div class="row" style="justify-content:center;margin-top:11px">
+          <span class="badge b-pri">Kelas VII-A</span><span class="badge b-ok">Aktif</span>
+          <span class="badge b-mut">No. absen 4</span></div>
+        <div class="hr"></div>
+        <div style="text-align:left;display:grid;gap:9px;font-size:12.8px">
+          <div class="row" style="justify-content:space-between"><span style="color:var(--muted)">TTL</span><b>Sleman, 12 Mar 2013</b></div>
+          <div class="row" style="justify-content:space-between"><span style="color:var(--muted)">Tahun masuk</span><b>2026</b></div>
+          <div class="row" style="justify-content:space-between"><span style="color:var(--muted)">Isi QR kartu</span>
+            <b class="num">2026071 <span style="color:var(--faint);font-weight:400">(NIS)</span></b></div>
+        </div>
+        <div class="row" style="margin-top:15px"><button class="btn btn-sm" style="flex:1">Edit</button>
+          <button class="btn btn-sm" style="flex:1">Cetak Kartu QR</button></div>
+      </div></div>
+
+      <div class="card">
+        <div class="card-h"><h3>Wali Murid</h3><div class="spacer"></div>
+          <button class="btn btn-sm">+ Tambah</button></div>
+        <div class="card-b" style="display:grid;gap:12px">
+          <div style="border:1px solid var(--border);border-radius:9px;padding:11px 12px">
+            <div class="row" style="justify-content:space-between">
+              <b style="font-size:13px">Sutrisno</b><span class="badge b-pri">Utama</span></div>
+            <div style="color:var(--muted);font-size:12px;margin-top:3px">Penerima notifikasi WhatsApp</div>
+            <div class="row" style="margin-top:7px;justify-content:space-between">
+              <span class="num" style="font-size:12.5px">0812****7890</span>
+              <span class="badge b-ok">✓ WA aktif</span></div>
+          </div>
+          <div style="border:1px solid var(--border);border-radius:9px;padding:11px 12px">
+            <div class="row" style="justify-content:space-between">
+              <b style="font-size:13px">Yuliana</b><span class="badge b-mut">Cadangan</span></div>
+            <div style="color:var(--muted);font-size:12px;margin-top:3px">Notifikasi dimatikan</div>
+            <div class="row" style="margin-top:7px;justify-content:space-between">
+              <span class="num" style="font-size:12.5px">0857****3311</span>
+              <span class="badge b-mut">Notifikasi mati</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;gap:16px;align-content:start">
+      <div class="grid g4">
+        <div class="stat"><div class="lb">Hadir</div>
+          <div class="vl" style="color:var(--ok)">18</div><div class="dt">hari</div></div>
+        <div class="stat"><div class="lb">Terlambat</div>
+          <div class="vl" style="color:var(--warn)">2</div><div class="dt">total 21 menit</div></div>
+        <div class="stat"><div class="lb">Izin / Sakit</div>
+          <div class="vl" style="color:var(--info)">1</div><div class="dt">1 izin</div></div>
+        <div class="stat"><div class="lb">Alpa</div>
+          <div class="vl" style="color:var(--danger)">1</div><div class="dt">4 September</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><h3>Kalender Kehadiran</h3><span class="hint">September 2026</span>
+          <div class="spacer"></div>
+          <button class="btn btn-sm">‹</button><button class="btn btn-sm">Sep 2026 ▾</button>
+          <button class="btn btn-sm">›</button></div>
+        <div class="card-b">
+          <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;text-align:center;
+               font-size:10.5px;color:var(--muted);font-weight:700;margin-bottom:7px">
+            <div>MIN</div><div>SEN</div><div>SEL</div><div>RAB</div><div>KAM</div><div>JUM</div><div>SAB</div></div>
+          <div id="cal" style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px"></div>
+          <div class="row" style="margin-top:14px;gap:14px;font-size:11.5px;color:var(--muted)">
+            <span class="row" style="gap:5px"><span class="dot" style="background:var(--ok)"></span>Hadir</span>
+            <span class="row" style="gap:5px"><span class="dot" style="background:var(--warn)"></span>Terlambat</span>
+            <span class="row" style="gap:5px"><span class="dot" style="background:var(--info)"></span>Izin</span>
+            <span class="row" style="gap:5px"><span class="dot" style="background:var(--violet)"></span>Sakit</span>
+            <span class="row" style="gap:5px"><span class="dot" style="background:var(--danger)"></span>Alpa</span>
+            <span class="row" style="gap:5px"><span class="dot" style="background:var(--neutral-bg)"></span>Libur</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><h3>Riwayat Presensi</h3><div class="spacer"></div>
+          <button class="btn btn-sm">Kirim rekap ke wali (WA)</button>
+          <button class="btn btn-sm">⭱ Ekspor PDF</button></div>
+        <div class="card-b flush"><div class="tbl-wrap"><table>
+          <thead><tr><th>Tanggal</th><th>Masuk</th><th>Status</th><th>Telat</th>
+            <th>Titik Scan</th><th>Keterangan</th></tr></thead>
+          <tbody>
+            <tr><td>Sel, 8 Sep</td><td class="num">07:22</td>
+              <td><span class="badge b-warn">TERLAMBAT</span></td><td class="num">12′</td>
+              <td><span class="badge b-mut">GATE-A</span></td><td style="color:var(--muted)">—</td></tr>
+            <tr><td>Sen, 7 Sep</td><td class="num">06:48</td>
+              <td><span class="badge b-ok">HADIR</span></td><td class="num">—</td>
+              <td><span class="badge b-mut">GATE-B</span></td><td style="color:var(--muted)">—</td></tr>
+            <tr><td>Jum, 4 Sep</td><td class="num">—</td>
+              <td><span class="badge b-dang">ALPA</span></td><td class="num">—</td>
+              <td style="color:var(--faint)">—</td>
+              <td style="color:var(--muted)">WA terkirim 09:00</td></tr>
+            <tr><td>Kam, 3 Sep</td><td class="num">—</td>
+              <td><span class="badge b-info">IZIN</span></td><td class="num">—</td>
+              <td style="color:var(--faint)">—</td>
+              <td style="color:var(--muted)">Acara keluarga · diinput Admin TU</td></tr>
+            <tr><td>Rab, 2 Sep</td><td class="num">06:55</td>
+              <td><span class="badge b-ok">HADIR</span></td><td class="num">—</td>
+              <td><span class="badge b-mut">GATE-A</span></td><td style="color:var(--muted)">—</td></tr>
+            <tr><td>Sel, 1 Sep</td><td class="num">07:09</td>
+              <td><span class="badge b-ok">HADIR</span></td><td class="num">—</td>
+              <td><span class="badge b-mut">GATE-A</span></td>
+              <td style="color:var(--muted)">Diubah Admin TU · alasan: scanner sempat mati</td></tr>
+          </tbody></table></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- KELAS ---------- -->
+<section class="screen" id="s-kelas">
+  <div class="row" style="margin-bottom:16px">
+    <select class="inp"><option>Tahun Ajaran 2026/2027 — Semester 1</option></select>
+    <select class="inp"><option>Semua tingkat</option><option>Kelas VII</option>
+      <option>Kelas VIII</option><option>Kelas IX</option></select>
+    <div class="spacer"></div>
+    <button class="btn">⇪ Kenaikan Kelas Massal</button>
+    <button class="btn btn-pri">+ Tambah Kelas</button>
+  </div>
+  <div class="card">
+    <div class="card-h"><h3>Daftar Kelas</h3><span class="hint">18 rombel · 1.370 siswa</span></div>
+    <div class="card-b flush"><div class="tbl-wrap"><table>
+      <thead><tr><th>Kelas</th><th>Tingkat</th><th>Wali Kelas</th><th>Jumlah Siswa</th>
+        <th>Kehadiran Hari Ini</th><th>Jam Masuk</th><th></th></tr></thead>
+      <tbody>
+        <tr><td><b>VII-A</b></td><td>7</td><td>Dewi Anggraini, S.Pd.</td><td class="num">35</td>
+          <td><div class="row" style="gap:8px"><div class="bar" style="width:90px">
+            <i style="width:94%;background:var(--ok)"></i></div><span class="num">94%</span></div></td>
+          <td class="num">07:00</td>
+          <td><button class="btn btn-sm">Anggota</button></td></tr>
+        <tr><td><b>VII-B</b></td><td>7</td><td>Ratna Sari, S.Pd.</td><td class="num">36</td>
+          <td><div class="row" style="gap:8px"><div class="bar" style="width:90px">
+            <i style="width:97%;background:var(--ok)"></i></div><span class="num">97%</span></div></td>
+          <td class="num">07:00</td>
+          <td><button class="btn btn-sm">Anggota</button></td></tr>
+        <tr><td><b>VII-C</b></td><td>7</td><td>Muhammad Iqbal, S.Pd.</td><td class="num">35</td>
+          <td><div class="row" style="gap:8px"><div class="bar" style="width:90px">
+            <i style="width:91%;background:var(--ok)"></i></div><span class="num">91%</span></div></td>
+          <td class="num">07:00</td>
+          <td><button class="btn btn-sm">Anggota</button></td></tr>
+        <tr><td><b>VIII-A</b></td><td>8</td><td>Ahmad Fauzi, S.Kom.</td><td class="num">34</td>
+          <td><div class="row" style="gap:8px"><div class="bar" style="width:90px">
+            <i style="width:94%;background:var(--ok)"></i></div><span class="num">94%</span></div></td>
+          <td class="num">07:00</td>
+          <td><button class="btn btn-sm">Anggota</button></td></tr>
+        <tr><td><b>VIII-C</b></td><td>8</td><td>Sri Wahyuni, S.Pd.</td><td class="num">33</td>
+          <td><div class="row" style="gap:8px"><div class="bar" style="width:90px">
+            <i style="width:74%;background:var(--danger)"></i></div><span class="num">74%</span></div></td>
+          <td class="num">07:00</td>
+          <td><button class="btn btn-sm">Anggota</button></td></tr>
+        <tr><td><b>IX-A</b></td><td>9</td><td>Budi Santoso, M.Pd.</td><td class="num">32</td>
+          <td><div class="row" style="gap:8px"><div class="bar" style="width:90px">
+            <i style="width:81%;background:var(--warn)"></i></div><span class="num">81%</span></div></td>
+          <td class="num">07:00</td>
+          <td><button class="btn btn-sm">Anggota</button></td></tr>
+        <tr><td><b>IX-B</b></td><td>9</td><td>Nur Hidayah, S.Pd.</td><td class="num">33</td>
+          <td><div class="row" style="gap:8px"><div class="bar" style="width:90px">
+            <i style="width:96%;background:var(--ok)"></i></div><span class="num">96%</span></div></td>
+          <td class="num">07:00</td>
+          <td><button class="btn btn-sm">Anggota</button></td></tr>
+      </tbody></table></div></div>
+  </div>
+</section>
+
+<!-- ---------- LAPORAN HARIAN ---------- -->
+<section class="screen" id="s-harian">
+  <div class="card" style="margin-bottom:16px"><div class="card-b"><div class="row">
+    <input class="inp" type="date" value="2026-09-08">
+    <select class="inp"><option>Kelas VII-A</option><option>Semua kelas (rekap)</option>
+      <option>Kelas VII-B</option><option>Kelas VIII-C</option></select>
+    <select class="inp"><option>Semua status</option><option>Hanya Terlambat</option>
+      <option>Hanya Alpa</option><option>Belum scan</option></select>
+    <div class="spacer"></div>
+    <button class="btn">⭱ Excel</button><button class="btn">⭱ PDF</button>
+    <button class="btn btn-pri">✆ Kirim ke Wali Kelas</button>
+  </div></div></div>
+
+  <div class="grid g6" style="margin-bottom:16px">
+    <div class="stat"><div class="lb">Total</div><div class="vl">35</div></div>
+    <div class="stat"><div class="lb">Hadir</div><div class="vl" style="color:var(--ok)">28</div></div>
+    <div class="stat"><div class="lb">Terlambat</div><div class="vl" style="color:var(--warn)">3</div></div>
+    <div class="stat"><div class="lb">Izin</div><div class="vl" style="color:var(--info)">1</div></div>
+    <div class="stat"><div class="lb">Sakit</div><div class="vl" style="color:var(--violet)">2</div></div>
+    <div class="stat"><div class="lb">Alpa</div><div class="vl" style="color:var(--danger)">1</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-h">
+      <div><h3>Laporan Harian — Kelas VII-A</h3>
+        <div class="hint">Selasa, 8 September 2026 · Wali Kelas: Dewi Anggraini, S.Pd. ·
+          kehadiran 88,6%</div></div></div>
+    <div class="card-b flush"><div class="tbl-wrap"><table>
+      <thead><tr><th style="width:40px">No</th><th>NIS</th><th>Nama Siswa</th><th>Masuk</th>
+        <th>Status</th><th>Telat</th><th>Notifikasi WA</th><th>Keterangan</th><th></th></tr></thead>
+      <tbody>
+        <tr><td class="num">1</td><td class="num">2026070</td><td>Ahmad Zaki</td>
+          <td class="num">06:47</td>
+          <td><span class="badge b-ok">HADIR</span></td><td class="num">—</td>
+          <td><span style="color:var(--ok);font-size:12.5px">✓ 06:47</span></td><td></td><td><button class="btn btn-sm">Ubah</button></td></tr>
+        <tr><td class="num">2</td><td class="num">2026071</td><td>Andi Pratama</td>
+          <td class="num">07:22</td>
+          <td><span class="badge b-warn">TERLAMBAT</span></td><td class="num">12′</td>
+          <td><span style="color:var(--ok);font-size:12.5px">✓ 06:51</span></td><td></td><td><button class="btn btn-sm">Ubah</button></td></tr>
+        <tr><td class="num">3</td><td class="num">2026072</td><td>Bunga Lestari</td>
+          <td class="num">06:51</td>
+          <td><span class="badge b-ok">HADIR</span></td><td class="num">—</td>
+          <td><span style="color:var(--ok);font-size:12.5px">✓ 06:58</span></td><td></td><td><button class="btn btn-sm">Ubah</button></td></tr>
+        <tr><td class="num">4</td><td class="num">2026073</td><td>Citra Dewi</td>
+          <td class="num">—</td>
+          <td><span class="badge b-vio">SAKIT</span></td><td class="num">—</td>
+          <td><span style="color:var(--ok);font-size:12.5px">✓ 06:20</span></td>
+          <td style="color:var(--muted);font-size:12px">Demam · surat dokter</td>
+          <td><button class="btn btn-sm">Ubah</button></td></tr>
+        <tr><td class="num">5</td><td class="num">2026074</td><td>Dimas Anggara</td>
+          <td class="num">—</td>
+          <td><span class="badge b-dang">ALPA</span></td><td class="num">—</td>
+          <td><span style="color:var(--danger);font-size:12.5px">✗ Gagal · nomor tidak aktif</span></td>
+          <td style="color:var(--muted);font-size:12px">Belum ada keterangan</td>
+          <td><button class="btn btn-sm btn-pri">Ubah</button></td></tr>
+        <tr><td class="num">6</td><td class="num">2026075</td><td>Eka Wulandari</td>
+          <td class="num">06:58</td>
+          <td><span class="badge b-ok">HADIR</span></td><td class="num">—</td>
+          <td><span style="color:var(--ok);font-size:12.5px">✓ 06:44</span></td><td></td><td><button class="btn btn-sm">Ubah</button></td></tr>
+        <tr><td class="num">7</td><td class="num">2026076</td><td>Farhan Nugroho</td>
+          <td class="num">—</td>
+          <td><span class="badge b-info">IZIN</span></td><td class="num">—</td>
+          <td><span style="color:var(--ok);font-size:12.5px">✓ 07:00</span></td>
+          <td style="color:var(--muted);font-size:12px">Acara keluarga</td>
+          <td><button class="btn btn-sm">Ubah</button></td></tr>
+        <tr><td class="num">8</td><td class="num">2026077</td><td>Galih Prasetyo</td>
+          <td class="num">07:07</td>
+          <td><span class="badge b-warn">TERLAMBAT</span></td><td class="num">7′</td>
+          <td><span style="color:var(--ok);font-size:12.5px">✓ 06:39</span></td><td></td><td><button class="btn btn-sm">Ubah</button></td></tr>
+        <tr><td class="num">9</td><td class="num">2026078</td><td>Hana Salsabila</td>
+          <td class="num">06:44</td>
+          <td><span class="badge b-ok">HADIR</span></td><td class="num">—</td>
+          <td><span style="color:var(--ok);font-size:12.5px">✓ terkirim</span></td><td></td><td><button class="btn btn-sm">Ubah</button></td></tr>
+        <tr><td class="num">10</td><td class="num">2026079</td><td>Indra Kusuma</td>
+          <td class="num">06:39</td>
+          <td><span class="badge b-ok">HADIR</span></td><td class="num">—</td>
+          <td><span style="color:var(--ok);font-size:12.5px">✓ terkirim</span></td><td></td><td><button class="btn btn-sm">Ubah</button></td></tr>
+      </tbody></table></div></div>
+    <div class="card-h" style="border-bottom:0;border-top:1px solid var(--border)">
+      <span class="hint">Menampilkan 10 dari 35 siswa</span><div class="spacer"></div>
+      <span class="hint">Dicetak dari SIKLON · 8 Sep 2026 15:40</span></div>
+  </div>
+
+  <div class="note" style="margin-top:16px">
+    Tombol <b>Ubah</b> dipakai admin untuk mengubah status siswa menjadi <b>IZIN</b> atau
+    <b>SAKIT</b> beserta catatannya — tidak ada halaman pengajuan izin terpisah. Setiap perubahan
+    mencatat siapa yang mengubah dan kapan.
+    <br><br>
+    Kolom <b>Notifikasi WA</b> menunjukkan kabar "ananda sudah sampai di sekolah" yang terkirim
+    ke wali murid — inti layanan sistem ini. Untuk 600 siswa totalnya ± 600 pesan/hari, dengan
+    pesan terakhir tiba ± 13 menit setelah siswa terakhir scan.
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <div class="card-h"><h3>Rekap Semua Kelas</h3>
+      <span class="hint">Selasa, 8 September 2026</span></div>
+    <div class="card-b flush"><div class="tbl-wrap"><table>
+      <thead><tr><th>Kelas</th><th>Total</th><th>Hadir</th><th>Terlambat</th><th>Izin</th>
+        <th>Sakit</th><th>Alpa</th><th>% Kehadiran</th></tr></thead>
+      <tbody>
+        <tr><td><b>VII-A</b></td><td class="num">35</td><td class="num">28</td><td class="num">3</td>
+          <td class="num">1</td><td class="num">2</td><td class="num">1</td>
+          <td><div class="row" style="gap:8px"><div class="bar" style="width:80px">
+            <i style="width:88.6%;background:var(--warn)"></i></div><span class="num">88,6%</span></div></td></tr>
+        <tr><td><b>VII-B</b></td><td class="num">36</td><td class="num">34</td><td class="num">1</td>
+          <td class="num">1</td><td class="num">0</td><td class="num">0</td>
+          <td><div class="row" style="gap:8px"><div class="bar" style="width:80px">
+            <i style="width:97.2%;background:var(--ok)"></i></div><span class="num">97,2%</span></div></td></tr>
+        <tr><td><b>VII-C</b></td><td class="num">35</td><td class="num">31</td><td class="num">1</td>
+          <td class="num">2</td><td class="num">1</td><td class="num">0</td>
+          <td><div class="row" style="gap:8px"><div class="bar" style="width:80px">
+            <i style="width:91.4%;background:var(--ok)"></i></div><span class="num">91,4%</span></div></td></tr>
+        <tr><td><b>VIII-A</b></td><td class="num">34</td><td class="num">30</td><td class="num">2</td>
+          <td class="num">1</td><td class="num">0</td><td class="num">1</td>
+          <td><div class="row" style="gap:8px"><div class="bar" style="width:80px">
+            <i style="width:94.1%;background:var(--ok)"></i></div><span class="num">94,1%</span></div></td></tr>
+        <tr style="background:color-mix(in srgb,var(--danger) 5%,transparent)">
+          <td><b>VIII-C</b></td><td class="num">33</td><td class="num">22</td><td class="num">2</td>
+          <td class="num">1</td><td class="num">1</td><td class="num">7</td>
+          <td><div class="row" style="gap:8px"><div class="bar" style="width:80px">
+            <i style="width:72.7%;background:var(--danger)"></i></div><span class="num">72,7%</span></div></td></tr>
+        <tr><td><b>IX-A</b></td><td class="num">32</td><td class="num">24</td><td class="num">2</td>
+          <td class="num">1</td><td class="num">0</td><td class="num">5</td>
+          <td><div class="row" style="gap:8px"><div class="bar" style="width:80px">
+            <i style="width:81.3%;background:var(--warn)"></i></div><span class="num">81,3%</span></div></td></tr>
+        <tr style="font-weight:700;background:var(--surface-2)">
+          <td>TOTAL SEKOLAH</td><td class="num">1.370</td><td class="num">1.184</td>
+          <td class="num">73</td><td class="num">41</td><td class="num">23</td><td class="num">49</td>
+          <td><div class="row" style="gap:8px"><div class="bar" style="width:80px">
+            <i style="width:91.8%;background:var(--ok)"></i></div><span class="num">91,8%</span></div></td></tr>
+      </tbody></table></div></div>
+  </div>
+</section>
+
+<!-- ---------- LAPORAN BULANAN ---------- -->
+<section class="screen" id="s-bulanan">
+  <div class="card" style="margin-bottom:16px"><div class="card-b"><div class="row">
+    <select class="inp"><option>September 2026</option><option>Agustus 2026</option></select>
+    <select class="inp"><option>Kelas VII-A</option><option>Semua kelas</option></select>
+    <div class="spacer"></div>
+    <button class="btn">⭱ Excel</button><button class="btn">⭱ PDF</button>
+    <button class="btn btn-pri">✆ Kirim Rekap ke Semua Wali</button>
+  </div></div></div>
+
+  <div class="card">
+    <div class="card-h"><div>
+      <h3>Rekap Bulanan — Kelas VII-A · September 2026</h3>
+      <div class="hint">21 hari efektif · rata-rata kehadiran 93,4% · geser tabel ke kanan untuk
+        melihat seluruh tanggal</div></div></div>
+    <div class="card-b flush"><div class="tbl-wrap"><table id="matrix"></table></div></div>
+    <div class="card-h" style="border-bottom:0;border-top:1px solid var(--border);flex-wrap:wrap;gap:14px">
+      <span class="badge b-ok">H = Hadir</span><span class="badge b-warn">T = Terlambat</span>
+      <span class="badge b-info">I = Izin</span><span class="badge b-vio">S = Sakit</span>
+      <span class="badge b-dang">A = Alpa</span><span class="badge b-mut">• = Libur</span>
+      <div class="spacer"></div>
+      <span class="hint">Tanda tangan: Wali Kelas &amp; Kepala Sekolah tercetak di PDF</span>
+    </div>
+  </div>
+
+  <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:16px">
+    <div class="card">
+      <div class="card-h"><h3>Siswa Perlu Perhatian</h3>
+        <span class="hint">alpa ≥ 3 atau terlambat ≥ 5 bulan ini</span></div>
+      <div class="card-b flush"><div class="tbl-wrap"><table>
+        <thead><tr><th>Siswa</th><th>Kelas</th><th>Alpa</th><th>Telat</th><th>% Hadir</th><th></th></tr></thead>
+        <tbody>
+          <tr><td>Dimas Anggara</td><td>VIII-A</td>
+            <td><span class="badge b-dang">6</span></td><td><span class="badge b-warn">4</span></td>
+            <td class="num">71%</td>
+            <td><button class="btn btn-sm">Kirim WA</button></td></tr>
+          <tr><td>Yoga Pratama</td><td>VIII-C</td>
+            <td><span class="badge b-dang">5</span></td><td><span class="badge b-warn">7</span></td>
+            <td class="num">74%</td>
+            <td><button class="btn btn-sm">Kirim WA</button></td></tr>
+          <tr><td>Tio Hermawan</td><td>IX-A</td>
+            <td><span class="badge b-dang">4</span></td><td><span class="badge b-mut">2</span></td>
+            <td class="num">80%</td>
+            <td><button class="btn btn-sm">Kirim WA</button></td></tr>
+          <tr><td>Andi Pratama</td><td>VII-A</td>
+            <td><span class="badge b-warn">1</span></td><td><span class="badge b-warn">6</span></td>
+            <td class="num">90%</td>
+            <td><button class="btn btn-sm">Kirim WA</button></td></tr>
+        </tbody></table></div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><h3>Distribusi Jam Kedatangan</h3>
+        <span class="hint">seluruh sekolah · September 2026</span></div>
+      <div class="card-b">
+        <svg viewBox="0 0 560 180" style="width:100%;height:180px">
+          <g>
+            <rect x="30"  y="128" width="46" height="32"  fill="#22c55e" rx="3"/>
+            <rect x="86"  y="86"  width="46" height="74"  fill="#22c55e" rx="3"/>
+            <rect x="142" y="34"  width="46" height="126" fill="#22c55e" rx="3"/>
+            <rect x="198" y="22"  width="46" height="138" fill="#22c55e" rx="3"/>
+            <rect x="254" y="60"  width="46" height="100" fill="#22c55e" rx="3"/>
+            <rect x="310" y="104" width="46" height="56"  fill="#f59e0b" rx="3"/>
+            <rect x="366" y="134" width="46" height="26"  fill="#f59e0b" rx="3"/>
+            <rect x="422" y="146" width="46" height="14"  fill="#ef4444" rx="3"/>
+            <rect x="478" y="152" width="46" height="8"   fill="#ef4444" rx="3"/>
+          </g>
+          <line x1="300" y1="10" x2="300" y2="164" stroke="var(--danger)" stroke-width="1.6"
+                stroke-dasharray="4 3"/>
+          <text x="304" y="18" font-size="10" fill="var(--danger)" font-weight="700">batas 07:10</text>
+          <g font-size="9.5" fill="var(--muted)" font-family="monospace">
+            <text x="36" y="174">06:20</text><text x="92" y="174">06:35</text>
+            <text x="148" y="174">06:50</text><text x="204" y="174">07:00</text>
+            <text x="260" y="174">07:05</text><text x="316" y="174">07:15</text>
+            <text x="372" y="174">07:30</text><text x="428" y="174">07:45</text>
+            <text x="484" y="174">08:00</text></g>
+        </svg>
+        <div class="note" style="margin-top:8px">
+          Puncak kedatangan pada 06:50–07:05. <b>73 siswa</b> tercatat lewat pukul 07:10 —
+          pertimbangkan menambah 1 jalur scanner di gerbang utama.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- SCANNER ---------- -->
+<section class="screen" id="s-scanner">
+  <div class="row" style="margin-bottom:16px">
+    <div class="note" style="flex:1;margin:0">
+      <b>Scanner Agent v1.0.3</b> terhubung dari PC Gerbang (192.168.1.24) · terakhir terlihat 4 detik lalu ·
+      <b>4 port serial + 1 kamera terdeteksi</b>, 1 belum diberi nama
+    </div>
+    <button class="btn">⭳ Unduh Agent</button>
+    <button class="btn btn-pri" onclick="mulaiKenali()">◎ Kenali Scanner</button>
+  </div>
+
+  <!-- panel mode identifikasi -->
+  <div id="panelKenali" class="card" hidden
+       style="margin-bottom:16px;border:2px solid var(--primary);
+              background:linear-gradient(120deg,color-mix(in srgb,var(--primary) 8%,transparent),transparent 60%)">
+    <div class="card-b" style="display:flex;align-items:center;gap:18px">
+      <div style="width:52px;height:52px;border-radius:50%;background:var(--primary);color:#fff;
+           display:grid;place-items:center;font-size:22px;flex:none" id="ikonKenali">◎</div>
+      <div style="flex:1">
+        <h3 id="judulKenali" style="font-size:16px">Mode identifikasi aktif</h3>
+        <div id="pesanKenali" style="color:var(--muted);font-size:13px;margin-top:4px">
+          Tempelkan barcode apa saja — kartu siswa mana pun — di scanner yang ingin Anda beri nama.
+          Baris portnya akan langsung disorot di bawah. Scan selama mode ini <b>tidak dicatat sebagai presensi</b>.
+        </div>
+      </div>
+      <div style="text-align:center">
+        <div class="num" id="hitungMundur" style="font-size:26px;font-weight:750;color:var(--primary)">60</div>
+        <div style="font-size:10.5px;color:var(--muted);font-weight:600">DETIK</div>
+      </div>
+      <button class="btn btn-sm" onclick="stopKenali()">Batal</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-h"><h3>Port Terdeteksi</h3>
+      <span class="hint">dilaporkan otomatis oleh agent — Anda tidak perlu mencatat nomor COM</span>
+      <div class="spacer"></div><button class="btn btn-sm btn-pri">Simpan Pemetaan</button></div>
+    <div class="card-b flush"><div class="tbl-wrap"><table>
+      <thead><tr><th style="width:150px">Perangkat</th><th>Pengenal</th><th>Kode Titik Scan</th>
+        <th>Label</th><th>Status</th><th>Scan Hari Ini</th></tr></thead>
+      <tbody>
+        <tr id="port-com3"><td><b class="num">COM3</b>
+            <div style="color:var(--muted);font-size:11.5px">Netum · 1eab:1d09</div></td>
+          <td><span class="badge b-ok">SN:A1B2C3D4</span>
+            <div style="color:var(--muted);font-size:11px;margin-top:3px">stabil walau pindah colokan</div></td>
+          <td><input class="inp btn-sm num" value="GATE-A" style="width:104px"></td>
+          <td><input class="inp btn-sm" value="Gerbang Utama" style="width:150px"></td>
+          <td><span class="badge b-ok">● Online</span></td>
+          <td class="num">412</td></tr>
+
+        <tr id="port-com4"><td><b class="num">COM4</b>
+            <div style="color:var(--muted);font-size:11.5px">Netum · 1eab:1d09</div></td>
+          <td><span class="badge b-ok">SN:E5F6G7H8</span>
+            <div style="color:var(--muted);font-size:11px;margin-top:3px">stabil walau pindah colokan</div></td>
+          <td><input class="inp btn-sm num" value="GATE-B" style="width:104px"></td>
+          <td><input class="inp btn-sm" value="Gerbang Samping" style="width:150px"></td>
+          <td><span class="badge b-ok">● Online</span></td>
+          <td class="num">386</td></tr>
+
+        <tr id="port-com5"><td><b class="num">COM5</b>
+            <div style="color:var(--muted);font-size:11.5px">Symcode · 26f1:5650</div></td>
+          <td><span class="badge b-warn">USB:1-4.2</span>
+            <div style="color:var(--warn);font-size:11px;margin-top:3px">⚠ tanpa nomor seri — jangan pindah colokan</div></td>
+          <td><input class="inp btn-sm num" value="GATE-C" style="width:104px"></td>
+          <td><input class="inp btn-sm" value="Gerbang Belakang" style="width:150px"></td>
+          <td><span class="badge b-ok">● Online</span></td>
+          <td class="num">0</td></tr>
+
+        <tr id="port-com6" style="background:color-mix(in srgb,var(--warn) 6%,transparent)">
+          <td><b class="num">COM6</b>
+            <div style="color:var(--muted);font-size:11.5px">Netum · 1eab:1d09</div></td>
+          <td><span class="badge b-ok">SN:J9K0L1M2</span></td>
+          <td><input class="inp btn-sm num" placeholder="belum diisi" style="width:104px"></td>
+          <td><input class="inp btn-sm" placeholder="belum diisi" style="width:150px"></td>
+          <td><span class="badge b-warn">Belum dinamai</span></td>
+          <td class="num">—</td></tr>
+        <tr id="port-cam"><td><b>Webcam Laptop</b>
+            <div style="color:var(--muted);font-size:11.5px">Integrated · 1280×960</div></td>
+          <td><span class="badge b-info">CAM:9c1f8a2e</span>
+            <div style="color:var(--muted);font-size:11px;margin-top:3px">deviceId dari browser</div></td>
+          <td><input class="inp btn-sm num" value="CAM-DEV" style="width:104px"></td>
+          <td><input class="inp btn-sm" value="Kamera Development" style="width:150px"></td>
+          <td><span class="badge b-info">▣ Kamera</span></td>
+          <td class="num">7</td></tr>
+      </tbody></table></div></div>
+    <div class="card-h" style="border-bottom:0;border-top:1px solid var(--border);flex-wrap:wrap">
+      <span class="hint">Perubahan pemetaan langsung dikirim ke agent — tidak perlu restart PC gerbang.
+        Baris bertipe <b>Kamera</b> tidak melewati agent; dibaca langsung oleh browser di halaman Konsol Scan.</span>
+    </div>
+  </div>
+
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card">
+      <div class="card-h"><h3>Isi <code>config.json</code> di PC Gerbang</h3>
+        <div class="spacer"></div><button class="btn btn-sm">⧉ Salin</button></div>
+      <div class="card-b" style="background:var(--surface-2)">
+<pre style="margin:0;font-family:var(--mono);font-size:12.5px;line-height:1.8;color:var(--text)">{
+  <span style="color:var(--info)">"apiUrl"</span>: <span style="color:var(--ok)">"https://presensi.sekolahku.sch.id"</span>,
+  <span style="color:var(--info)">"apiKey"</span>: <span style="color:var(--ok)">"agt_9f2c····························"</span>
+}</pre>
+        <div style="color:var(--muted);font-size:12.5px;margin-top:12px">
+          Hanya dua baris, dan tidak pernah diubah lagi. Daftar scanner tidak ada di sini —
+          semuanya diatur dari halaman ini.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><h3>Kenapa dipetakan lewat nomor seri?</h3></div>
+      <div class="card-b">
+        <p style="margin:0 0 12px;font-size:13px;line-height:1.7;color:var(--muted)">
+          Nomor COM di Windows <b style="color:var(--text)">bisa berubah sendiri</b> kalau scanner
+          dicabut-pasang atau dipindah colokan USB. Kalau pemetaan dikunci ke <code>COM3</code>,
+          suatu pagi presensi bisa tercatat dari gerbang yang salah tanpa ada yang sadar.
+        </p>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Pengenal</th><th>Tahan terhadap</th></tr></thead>
+          <tbody>
+            <tr><td><span class="badge b-ok">SN:</span> nomor seri USB</td>
+              <td style="color:var(--muted);font-size:12.5px">pindah colokan, ganti PC, restart</td></tr>
+            <tr><td><span class="badge b-warn">USB:</span> lokasi port fisik</td>
+              <td style="color:var(--muted);font-size:12.5px">restart &amp; cabut-pasang, asal colokan tetap</td></tr>
+            <tr><td><span class="badge b-mut">PORT:</span> nomor COM</td>
+              <td style="color:var(--muted);font-size:12.5px">hanya restart — pilihan terakhir</td></tr>
+          </tbody></table></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- WHATSAPP ---------- -->
+<section class="screen" id="s-wa">
+  <div class="tabs">
+    <button class="tab sel">Koneksi</button><button class="tab">Template Pesan</button>
+    <button class="tab">Log Pengiriman</button><button class="tab">Pengaturan Kirim</button>
+  </div>
+
+  <div class="grid" style="grid-template-columns:1fr 1.35fr;margin-bottom:16px">
+    <div class="card">
+      <div class="card-h"><h3>Status Koneksi</h3><div class="spacer"></div>
+        <span class="badge b-ok">● Tersambung</span></div>
+      <div class="card-b" style="display:grid;gap:11px;font-size:13px">
+        <div class="row" style="justify-content:space-between">
+          <span style="color:var(--muted)">Provider</span><b>Baileys (gratis)</b></div>
+        <div class="row" style="justify-content:space-between">
+          <span style="color:var(--muted)">Nomor terhubung</span><b class="num">+62 812-3456-7890</b></div>
+        <div class="row" style="justify-content:space-between">
+          <span style="color:var(--muted)">Terhubung sejak</span><b>2 Sep 2026, 08:14</b></div>
+        <div class="row" style="justify-content:space-between">
+          <span style="color:var(--muted)">Terkirim hari ini</span><b class="num">1.298 pesan</b></div>
+        <div class="row" style="justify-content:space-between">
+          <span style="color:var(--muted)">Sisa kuota harian aman</span>
+          <b class="num" style="color:var(--warn)">702 / 2.000</b></div>
+        <div class="bar" style="height:8px"><i style="width:65%;background:var(--warn)"></i></div>
+        <div class="hr" style="margin:4px 0"></div>
+        <div class="row"><button class="btn btn-sm">Kirim Pesan Uji</button>
+          <button class="btn btn-sm btn-dang">Putuskan &amp; Scan Ulang</button></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><h3>Antrean Pengiriman</h3>
+        <span class="hint">worker mengirim 1 pesan tiap 3–8 detik (acak)</span></div>
+      <div class="card-b">
+        <div class="grid g4" style="gap:11px;margin-bottom:14px">
+          <div style="text-align:center;padding:11px;border:1px solid var(--border);border-radius:9px">
+            <div class="num" style="font-size:22px;font-weight:750;color:var(--warn)">18</div>
+            <div style="font-size:11px;color:var(--muted);font-weight:600">MENUNGGU</div></div>
+          <div style="text-align:center;padding:11px;border:1px solid var(--border);border-radius:9px">
+            <div class="num" style="font-size:22px;font-weight:750;color:var(--info)">2</div>
+            <div style="font-size:11px;color:var(--muted);font-weight:600">MENGIRIM</div></div>
+          <div style="text-align:center;padding:11px;border:1px solid var(--border);border-radius:9px">
+            <div class="num" style="font-size:22px;font-weight:750;color:var(--ok)">1.298</div>
+            <div style="font-size:11px;color:var(--muted);font-weight:600">TERKIRIM</div></div>
+          <div style="text-align:center;padding:11px;border:1px solid var(--border);border-radius:9px">
+            <div class="num" style="font-size:22px;font-weight:750;color:var(--danger)">2</div>
+            <div style="font-size:11px;color:var(--muted);font-weight:600">GAGAL</div></div>
+        </div>
+        <div class="note">
+          <b>Anti-blokir:</b> jeda acak antar pesan, jam tenang 18:30–06:00, dan batas 2.000
+          pesan/hari. Pesan gagal dicoba ulang maksimal 3× dengan jeda meningkat.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid" style="grid-template-columns:1fr 380px;margin-bottom:16px">
+    <div class="card">
+      <div class="card-h"><h3>Template Pesan</h3>
+        <span class="hint">klik variabel untuk menyisipkan</span>
+        <div class="spacer"></div><button class="btn btn-sm btn-pri">Simpan</button></div>
+      <div class="card-b">
+        <div class="row" style="margin-bottom:12px">
+          <select class="inp" style="flex:1"><option>TERLAMBAT — Siswa Terlambat</option>
+            <option>MASUK — Siswa Hadir</option>
+            <option>ALPA — Siswa Tidak Hadir</option>
+            <option>REKAP — Rekap Mingguan</option></select>
+          <label style="font-size:12.5px;color:var(--muted);display:flex;gap:7px;align-items:center">
+            <input type="checkbox" checked> Aktif</label>
+        </div>
+        <textarea class="inp" style="width:100%;min-height:158px;font-family:var(--mono);
+          font-size:12.5px;line-height:1.75;resize:vertical">Assalamu'alaikum Bpk/Ibu {nama_wali}.
+
+Ananda *{nama_siswa}* ({kelas}) hadir *TERLAMBAT {menit_terlambat} menit* pada {tanggal} pukul *{jam}*.
+
+Mohon perhatiannya. Terima kasih.
+— {nama_sekolah}</textarea>
+        <div class="row" style="margin-top:11px;gap:6px">
+          <span style="font-size:11.5px;color:var(--muted);font-weight:600">VARIABEL:</span>
+          <span class="badge b-pri">{nama_wali}</span><span class="badge b-pri">{nama_siswa}</span>
+          <span class="badge b-pri">{kelas}</span><span class="badge b-pri">{tanggal}</span>
+          <span class="badge b-pri">{jam}</span><span class="badge b-pri">{menit_terlambat}</span>
+          <span class="badge b-pri">{nama_sekolah}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><h3>Pratinjau di HP Wali</h3></div>
+      <div class="card-b" style="background:#0b141a;border-radius:0 0 10px 10px">
+        <div style="max-width:300px;margin:0 auto">
+          <div style="background:#005c4b;color:#e9edef;border-radius:10px 10px 3px 10px;
+               padding:9px 11px;font-size:12.8px;line-height:1.62;margin-left:26px;
+               box-shadow:0 1px 2px rgba(0,0,0,.3)">
+            Assalamu'alaikum Bpk/Ibu <b>Sutrisno</b>.<br><br>
+            Ananda <b>Andi Pratama</b> (VII-A) hadir <b>TERLAMBAT 12 menit</b> pada
+            8 September 2026 pukul <b>07:22</b>.<br><br>
+            Mohon perhatiannya. Terima kasih.<br>— SMP Negeri 1 Contoh
+            <div style="text-align:right;font-size:10px;opacity:.6;margin-top:5px">07:22 ✓✓</div>
+          </div>
+          <div style="text-align:center;color:#8696a0;font-size:10.5px;margin-top:11px">
+            Terkirim ke +62 812-3456-7890</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-h"><h3>Log Pengiriman</h3><div class="spacer"></div>
+      <select class="inp btn-sm"><option>Semua status</option><option>Gagal saja</option></select>
+      <button class="btn btn-sm">Kirim Ulang Semua yang Gagal</button></div>
+    <div class="card-b flush"><div class="tbl-wrap"><table>
+      <thead><tr><th>Waktu</th><th>Penerima</th><th>Siswa</th><th>Template</th><th>Isi Pesan</th>
+        <th>Percobaan</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        <tr><td class="num">07:41:26</td><td>Sulastri<div style="color:var(--muted);font-size:11.5px"
+            >0857****1204</div></td><td>Rizki Maulana</td><td><span class="badge b-mut">SCAN_IN</span></td>
+          <td style="color:var(--muted);font-size:12px;max-width:230px;overflow:hidden;
+            text-overflow:ellipsis;white-space:nowrap">Ananda Rizki Maulana (IX-B) telah HADIR…</td>
+          <td class="num">1</td><td><span class="badge b-ok">TERKIRIM</span></td>
+          <td><button class="btn btn-sm">Lihat</button></td></tr>
+        <tr><td class="num">07:22:19</td><td>Sutrisno<div style="color:var(--muted);font-size:11.5px"
+            >0812****7890</div></td><td>Andi Pratama</td>
+          <td><span class="badge b-mut">SCAN_IN_LATE</span></td>
+          <td style="color:var(--muted);font-size:12px;max-width:230px;overflow:hidden;
+            text-overflow:ellipsis;white-space:nowrap">Ananda Andi Pratama (VII-A) hadir TERLAMBAT…</td>
+          <td class="num">1</td><td><span class="badge b-ok">TERKIRIM</span></td>
+          <td><button class="btn btn-sm">Lihat</button></td></tr>
+        <tr style="background:color-mix(in srgb,var(--danger) 5%,transparent)">
+          <td class="num">07:19:52</td><td>Wahyu Setiawan<div style="color:var(--muted);font-size:11.5px"
+            >0899****0001</div></td><td>Dimas Anggara</td>
+          <td><span class="badge b-mut">SCAN_IN_LATE</span></td>
+          <td style="color:var(--danger);font-size:12px">Nomor tidak terdaftar di WhatsApp</td>
+          <td class="num">2 / 3</td><td><span class="badge b-dang">GAGAL</span></td>
+          <td><button class="btn btn-sm">Coba Lagi</button></td></tr>
+        <tr><td class="num">07:03:02</td><td>Rina Marlina<div style="color:var(--muted);font-size:11.5px"
+            >0813****4521</div></td><td>Bunga Lestari</td><td><span class="badge b-mut">SCAN_IN</span></td>
+          <td style="color:var(--muted);font-size:12px;max-width:230px;overflow:hidden;
+            text-overflow:ellipsis;white-space:nowrap">Ananda Bunga Lestari (VII-A) telah HADIR…</td>
+          <td class="num">1</td><td><span class="badge b-ok">TERKIRIM</span></td>
+          <td><button class="btn btn-sm">Lihat</button></td></tr>
+        <tr><td class="num">09:00:04</td><td>Hendra Gunawan<div style="color:var(--muted);font-size:11.5px"
+            >0856****1180</div></td><td>Citra Dewi</td><td><span class="badge b-mut">ABSENT</span></td>
+          <td style="color:var(--muted);font-size:12px;max-width:230px;overflow:hidden;
+            text-overflow:ellipsis;white-space:nowrap">Hingga pukul 09:00 ananda BELUM TERCATAT…</td>
+          <td class="num">1</td><td><span class="badge b-info">DALAM ANTREAN</span></td>
+          <td><button class="btn btn-sm">Batalkan</button></td></tr>
+      </tbody></table></div></div>
+  </div>
+</section>
+
+<!-- ---------- PENGATURAN ---------- -->
+<section class="screen" id="s-pengaturan">
+  <div class="tabs">
+    <button class="tab sel">Jadwal &amp; Jam Masuk</button><button class="tab">Hari Libur</button>
+    <button class="tab">Tahun Ajaran</button><button class="tab">Identitas Sekolah</button>
+  </div>
+  <div class="grid" style="grid-template-columns:1.4fr 1fr">
+    <div class="card">
+      <div class="card-h"><h3>Jam Masuk &amp; Batas Terlambat</h3>
+        <span class="hint">scan setelah batas ini otomatis dihitung TERLAMBAT</span>
+        <div class="spacer"></div><button class="btn btn-sm btn-pri">Simpan</button></div>
+      <div class="card-b">
+
+        <div class="row" style="gap:22px;align-items:flex-end;flex-wrap:wrap">
+          <div><label class="fl">Jam masuk</label>
+            <input class="inp num" type="time" value="07:00" style="width:118px;font-size:15px"></div>
+          <div style="font-size:20px;color:var(--faint);padding-bottom:7px">+</div>
+          <div><label class="fl">Toleransi</label>
+            <div class="row" style="gap:7px"><input class="inp num" value="10" style="width:66px;font-size:15px">
+              <span style="color:var(--muted);font-size:13px">menit</span></div></div>
+          <div style="font-size:20px;color:var(--faint);padding-bottom:7px">=</div>
+          <div style="background:var(--warn-bg);border:1px solid var(--warn);border-radius:10px;
+               padding:9px 16px">
+            <div style="font-size:11px;color:var(--warn);font-weight:700;letter-spacing:.04em">
+              BATAS TERLAMBAT</div>
+            <div class="num" style="font-size:22px;font-weight:750;color:var(--warn);margin-top:1px">
+              07:10</div></div>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="row" style="gap:22px;flex-wrap:wrap">
+          <div><label class="fl">Batas alpa</label>
+            <input class="inp num" type="time" value="09:00" style="width:118px">
+            <div style="font-size:11.5px;color:var(--muted);margin-top:5px;max-width:190px">
+              Belum scan sampai jam ini → <b>ALPA</b> + WA ke wali</div></div>
+          <div><label class="fl">Jam pulang</label>
+            <input class="inp num" type="time" value="15:00" style="width:118px">
+            <div style="font-size:11.5px;color:var(--muted);margin-top:5px;max-width:190px">
+              Scan setelah jam ini dicatat sebagai <b>jam pulang</b></div></div>
+          <div><label class="fl">Hari sekolah</label>
+            <div class="row" style="gap:5px">
+              <label class="badge b-pri" style="cursor:pointer;padding:5px 9px">
+                <input type="checkbox" checked style="margin-right:4px">Sen</label>
+              <label class="badge b-pri" style="cursor:pointer;padding:5px 9px">
+                <input type="checkbox" checked style="margin-right:4px">Sel</label>
+              <label class="badge b-pri" style="cursor:pointer;padding:5px 9px">
+                <input type="checkbox" checked style="margin-right:4px">Rab</label>
+              <label class="badge b-pri" style="cursor:pointer;padding:5px 9px">
+                <input type="checkbox" checked style="margin-right:4px">Kam</label>
+              <label class="badge b-pri" style="cursor:pointer;padding:5px 9px">
+                <input type="checkbox" checked style="margin-right:4px">Jum</label>
+              <label class="badge b-mut" style="cursor:pointer;padding:5px 9px">
+                <input type="checkbox" style="margin-right:4px">Sab</label>
+            </div>
+            <div style="font-size:11.5px;color:var(--muted);margin-top:7px">
+              Di luar hari ini scan ditolak dan tidak dihitung</div></div>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="row" style="justify-content:space-between;margin-bottom:9px">
+          <b style="font-size:13px">Pengecualian per hari</b>
+          <button class="btn btn-sm">+ Tambah</button></div>
+        <div style="border:1px solid var(--border);border-radius:9px;padding:11px 13px;
+             display:flex;align-items:center;gap:12px">
+          <span class="badge b-pri">Jumat</span>
+          <span style="font-size:12.8px;color:var(--muted)">jam pulang
+            <b style="color:var(--text)">11:30</b> (menimpa 15:00)</span>
+          <div class="spacer"></div>
+          <button class="btn btn-sm">Edit</button>
+        </div>
+
+        <div class="hr"></div>
+
+        <b style="font-size:13px">Contoh penerapan aturan di atas</b>
+        <div class="tbl-wrap" style="margin-top:9px"><table>
+          <thead><tr><th>Jam scan</th><th>Status</th><th>Keterangan</th></tr></thead>
+          <tbody>
+            <tr><td class="num">06:55</td><td><span class="badge b-ok">HADIR</span></td>
+              <td style="color:var(--muted)">sebelum jam masuk</td></tr>
+            <tr><td class="num">07:08</td><td><span class="badge b-ok">HADIR</span></td>
+              <td style="color:var(--muted)">masih dalam toleransi 10 menit</td></tr>
+            <tr><td class="num">07:11</td><td><span class="badge b-warn">TERLAMBAT</span></td>
+              <td style="color:var(--muted)">lewat 1 menit dari batas 07:10</td></tr>
+            <tr><td class="num">07:22</td><td><span class="badge b-warn">TERLAMBAT</span></td>
+              <td style="color:var(--muted)">tercatat terlambat 12 menit</td></tr>
+            <tr><td class="num">—</td><td><span class="badge b-dang">ALPA</span></td>
+              <td style="color:var(--muted)">belum scan sampai 09:00 · WA dikirim otomatis</td></tr>
+            <tr><td class="num">15:04</td><td><span class="badge b-mut">jam pulang</span></td>
+              <td style="color:var(--muted)">sudah absen masuk pagi tadi</td></tr>
+          </tbody></table></div>
+      </div>
+    </div>
+
+    <div style="display:grid;gap:16px;align-content:start">
+      <div class="card">
+        <div class="card-h"><h3>Pengaturan Scan</h3></div>
+        <div class="card-b" style="display:grid;gap:13px">
+          <div class="field" style="margin:0"><label class="fl">Abaikan scan ganda dalam</label>
+            <div class="row"><input class="inp num" value="60" style="width:80px">
+              <span style="color:var(--muted);font-size:12.5px">detik</span></div></div>
+          <label style="font-size:13px;display:flex;gap:9px;align-items:center">
+            <input type="checkbox" checked> Tampilkan foto siswa di konsol scan</label>
+          <label style="font-size:13px;display:flex;gap:9px;align-items:center">
+            <input type="checkbox" checked> Bunyi umpan balik sukses / gagal</label>
+          <label style="font-size:13px;display:flex;gap:9px;align-items:center">
+            <input type="checkbox"> Tolak scan di luar jam operasional scanner</label>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h"><h3>Kirim Notifikasi Saat</h3>
+          <span class="hint">600 siswa · kapasitas kirim ± 11 pesan/menit</span></div>
+        <div class="card-b" style="display:grid;gap:11px">
+          <label style="font-size:13px;display:flex;gap:9px;align-items:center">
+            <input type="checkbox" checked> Siswa terlambat
+            <span class="badge b-ok" style="margin-left:auto">± 36 pesan/hari</span></label>
+          <label style="font-size:13px;display:flex;gap:9px;align-items:center">
+            <input type="checkbox" checked> Siswa tidak hadir (jam 09:00)
+            <span class="badge b-ok" style="margin-left:auto">± 24 pesan/hari</span></label>
+          <label style="font-size:13px;display:flex;gap:9px;align-items:center">
+            <input type="checkbox" checked> Siswa hadir <b style="font-weight:700">(inti layanan)</b>
+            <span class="badge b-mut" style="margin-left:auto">± 540 pesan/hari</span></label>
+          <label style="font-size:13px;display:flex;gap:9px;align-items:center">
+            <input type="checkbox" checked> Rekap mingguan (Sabtu pagi)
+            <span class="badge b-mut" style="margin-left:auto">600 pesan/minggu</span></label>
+
+          <div class="hr" style="margin:3px 0"></div>
+          <div class="row" style="justify-content:space-between">
+            <span style="font-size:12.5px;color:var(--muted);font-weight:600">Total hari ini</span>
+            <b class="num" style="font-size:15px;color:var(--ok)">600 pesan · ekor antre ± 13 menit</b></div>
+          <div class="bar" style="height:8px"><i style="width:75%;background:var(--ok)"></i></div>
+          <div style="font-size:11px;color:var(--muted)">75% dari batas harian 800</div>
+
+          <div class="note">
+            Notifikasi <b>"ananda sudah sampai di sekolah"</b> adalah inti layanan ini, jadi
+            sengaja aktif. Selama masa pemanasan nomor baru, turunkan batas harian dan aktifkan
+            bertahap per tingkat kelas: minggu 1 = 200, minggu 2 = 400, minggu 3+ = 800.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- PENGGUNA (SUPER ADMIN) ---------- -->
+<section class="screen" id="s-users">
+  <div class="note" style="margin-bottom:16px">
+    <b>Halaman khusus Super Admin.</b> Sistem hanya mengenal dua peran:
+    <b>Super Admin</b> (semua permission + kelola pengguna) dan <b>Admin</b> (seluruh operasional,
+    tanpa akses halaman ini). Akun baru selalu dibuat dengan peran Admin — menambah Super Admin
+    hanya bisa lewat perintah CLI di server.
+  </div>
+
+  <div class="grid" style="grid-template-columns:1.5fr 1fr">
+    <div class="card">
+      <div class="card-h"><h3>Daftar Pengguna</h3><span class="hint">5 akun · 4 aktif</span>
+        <div class="spacer"></div><button class="btn btn-pri">+ Buat Akun Admin</button></div>
+      <div class="card-b flush"><div class="tbl-wrap"><table>
+        <thead><tr><th>Pengguna</th><th>Peran</th><th>Status</th><th>Login Terakhir</th>
+          <th>Sesi Aktif</th><th>Aksi</th></tr></thead>
+        <tbody>
+          <tr><td><div class="who"><div class="avatar" style="background:var(--primary);color:#fff">SA</div>
+            <div><div class="nm">Super Administrator</div>
+              <div class="mt">superadmin · superadmin@sekolahku.sch.id</div></div></div></td>
+            <td><span class="badge b-pri">SUPER ADMIN</span></td>
+            <td><span class="badge b-ok">✓ tercetak</span></td>
+            <td style="color:var(--muted);font-size:12.5px">8 Sep 07:02<br>192.168.1.10</td>
+            <td class="num">1</td>
+            <td><span style="color:var(--faint);font-size:12px">akun Anda</span></td></tr>
+          <tr><td><div class="who"><div class="avatar">AT</div>
+            <div><div class="nm">Admin Tata Usaha</div>
+              <div class="mt">admin.tu · tu@sekolahku.sch.id</div></div></div></td>
+            <td><span class="badge b-mut">ADMIN</span></td>
+            <td><span class="badge b-ok">✓ tercetak</span></td>
+            <td style="color:var(--muted);font-size:12.5px">8 Sep 06:45<br>192.168.1.24</td>
+            <td class="num">2</td>
+            <td><div class="row" style="gap:5px"><button class="btn btn-sm">Edit</button>
+              <button class="btn btn-sm">Reset Password</button>
+              <button class="btn btn-sm btn-dang">Nonaktifkan</button></div></td></tr>
+          <tr><td><div class="who"><div class="avatar">PG</div>
+            <div><div class="nm">Petugas Gerbang</div>
+              <div class="mt">operator.gerbang</div></div></div></td>
+            <td><span class="badge b-mut">ADMIN</span></td>
+            <td><span class="badge b-ok">✓ tercetak</span></td>
+            <td style="color:var(--muted);font-size:12.5px">8 Sep 06:20<br>192.168.1.24</td>
+            <td class="num">1</td>
+            <td><div class="row" style="gap:5px"><button class="btn btn-sm">Edit</button>
+              <button class="btn btn-sm">Reset Password</button>
+              <button class="btn btn-sm btn-dang">Nonaktifkan</button></div></td></tr>
+          <tr><td><div class="who"><div class="avatar">GP</div>
+            <div><div class="nm">Guru Piket</div><div class="mt">guru.piket</div></div></div></td>
+            <td><span class="badge b-mut">ADMIN</span></td>
+            <td><span class="badge b-warn">Wajib ganti password</span></td>
+            <td style="color:var(--muted);font-size:12.5px">belum pernah login</td>
+            <td class="num">0</td>
+            <td><div class="row" style="gap:5px"><button class="btn btn-sm">Edit</button>
+              <button class="btn btn-sm">Reset Password</button>
+              <button class="btn btn-sm btn-dang">Nonaktifkan</button></div></td></tr>
+          <tr style="opacity:.58"><td><div class="who"><div class="avatar">RS</div>
+            <div><div class="nm">Rina Setiawati</div><div class="mt">rina.s</div></div></div></td>
+            <td><span class="badge b-mut">ADMIN</span></td>
+            <td><span class="badge b-dang">Nonaktif</span></td>
+            <td style="color:var(--muted);font-size:12.5px">14 Jul 2026<br>—</td>
+            <td class="num">0</td>
+            <td><button class="btn btn-sm">Aktifkan Kembali</button></td></tr>
+        </tbody></table></div></div>
+    </div>
+
+    <div class="card" style="align-self:start">
+      <div class="card-h"><h3>Buat Akun Admin</h3></div>
+      <div class="card-b">
+        <div class="field"><label class="fl">Nama Lengkap</label>
+          <input class="inp" style="width:100%" placeholder="mis. Siti Nurhaliza"></div>
+        <div class="field"><label class="fl">Username</label>
+          <input class="inp" style="width:100%" placeholder="mis. siti.n"></div>
+        <div class="field"><label class="fl">Email <span style="font-weight:400">(opsional)</span></label>
+          <input class="inp" style="width:100%" placeholder="siti@sekolahku.sch.id"></div>
+        <div class="field"><label class="fl">Password Sementara</label>
+          <div class="row"><input class="inp" style="flex:1" value="Xk7#mQ2p"><button class="btn btn-sm">Acak</button></div>
+        </div>
+        <div class="field"><label class="fl">Peran</label>
+          <select class="inp" style="width:100%" disabled><option>Admin</option></select>
+          <div style="font-size:11.5px;color:var(--muted);margin-top:6px">
+            Peran dikunci ke Admin. Super Admin hanya bisa ditambah lewat CLI server:<br>
+            <code style="font-family:var(--mono);font-size:11px">pnpm --filter api user:promote &lt;username&gt;</code></div>
+        </div>
+        <label style="font-size:12.8px;display:flex;gap:8px;align-items:center;margin-bottom:16px">
+          <input type="checkbox" checked> Wajib ganti password saat login pertama</label>
+        <button class="btn btn-pri" style="width:100%;justify-content:center">Buat Akun</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<script>
+const TITLES = {
+  dashboard:['Dashboard','Selasa, 8 September 2026 · Tahun Ajaran 2026/2027'],
+  scan:     ['Konsol Scan','3 scanner aktif · 798 scan hari ini'],
+  siswa:    ['Siswa','1.370 siswa aktif · 18 kelas · nomor wali di data siswa'],
+  detail:   ['Detail Siswa','Andi Pratama · VII-A · NIS 2026071'],
+  kelas:    ['Kelas','Tahun Ajaran 2026/2027 · 18 kelas'],
+  harian:   ['Laporan Harian','Selasa, 8 September 2026'],
+  bulanan:  ['Laporan Bulanan','September 2026 · 22 hari efektif'],
+  scanner:  ['Scanner','4 port terdeteksi · 1 belum diberi nama'],
+  wa:       ['WhatsApp','Baileys · tersambung · 1.298 pesan hari ini'],
+  pengaturan:['Pengaturan','Jadwal, hari libur, tahun ajaran, identitas sekolah'],
+  users:    ['Pengguna','Khusus Super Admin · 5 akun terdaftar'],
+};
+
+function go(name){
+  const login = document.getElementById('s-login');
+  const shell = document.getElementById('shell');
+  if (name === 'login'){ login.style.display='grid'; shell.style.display='none'; return; }
+  login.style.display='none'; shell.style.display='grid';
+  document.querySelectorAll('.screen').forEach(el=>el.classList.remove('on'));
+  const target = document.getElementById('s-'+name);
+  if (target) target.classList.add('on');
+  document.querySelectorAll('.navitem').forEach(b=>b.classList.toggle('active', b.dataset.s===name));
+  const t = TITLES[name] || [name,''];
+  document.getElementById('pgTitle').textContent = t[0];
+  document.getElementById('pgSub').textContent   = t[1];
+  window.scrollTo({top:0});
+  location.hash = name;
+}
+document.querySelectorAll('.navitem').forEach(b=>b.onclick=()=>go(b.dataset.s));
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
+  t.parentElement.querySelectorAll('.tab').forEach(x=>x.classList.remove('sel'));
+  t.classList.add('sel');
+});
+function toggleTheme(){
+  const r = document.documentElement;
+  r.dataset.theme = r.dataset.theme === 'dark' ? 'light' : 'dark';
+}
+
+/* ---- Kalender kehadiran (Detail Siswa) ---- */
+(function(){
+  const C = {H:['var(--ok-bg)','var(--ok)'], T:['var(--warn-bg)','var(--warn)'],
+             I:['var(--info-bg)','var(--info)'], S:['var(--violet-bg)','var(--violet)'],
+             A:['var(--danger-bg)','var(--danger)'], L:['var(--neutral-bg)','var(--faint)']};
+  // September 2026: tgl 1 = Selasa → 2 sel kosong di depan
+  // 1 Sep 2026 = Selasa -> 2 sel kosong (Minggu, Senin)
+  const data = ['','',
+    'H','H','I','A','L','L',      //  1– 6
+    'H','T','H','H','H','L','L',  //  7–13
+    'H','H','H','H','H','L','L',  // 14–20
+    'H','H','H','H','T','L','L',  // 21–27
+    'H','H','H'];                 // 28–30
+  const cal = document.getElementById('cal');
+  data.forEach((v,i)=>{
+    const d = document.createElement('div');
+    if(!v){ d.innerHTML='&nbsp;'; d.style.cssText='height:44px'; cal.appendChild(d); return; }
+    const day = i-1;
+    const c = C[v] || C.L;
+    d.style.cssText = `height:44px;border-radius:8px;background:${c[0]};color:${c[1]};
+      display:grid;place-items:center;font-weight:700;font-size:12px;position:relative;
+      border:1px solid transparent`;
+    if(day===8) d.style.border='2px solid var(--primary)';  // hari ini
+    d.innerHTML = `<span style="position:absolute;top:3px;left:6px;font-size:9.5px;opacity:.72;
+      font-weight:600">${day}</span><span style="margin-top:6px">${v==='L'?'·':v}</span>`;
+    d.title = `${day} September 2026 — ${
+      {H:'Hadir',T:'Terlambat',I:'Izin',S:'Sakit',A:'Alpa',L:'Libur'}[v]}`;
+    cal.appendChild(d);
+  });
+})();
+
+/* ---- Matriks laporan bulanan ---- */
+(function(){
+  const tbl = document.getElementById('matrix');
+  const days = [1,2,3,4,7,8,9,10,11,14,15,16,17,18,21,22,23,24,25,28,29,30];
+  const rows = [
+    ['Ahmad Zaki',       'HHHHHHHHHHHHHHHHHHHHHT'],
+    ['Andi Pratama',     'HHIAHTHHHHHHHHHHHHTHHH'],
+    ['Bunga Lestari',    'HHHHHHHHHHHHHHHHHHHHHH'],
+    ['Citra Dewi',       'SSHHHHHAHHHHHHHHHHHHHH'],
+    ['Dimas Anggara',    'HAAHTAHHTHAHHHHTHAHHHH'],
+    ['Eka Wulandari',    'HHHHHHHHHHHIHHHHHHHHHH'],
+    ['Farhan Nugroho',   'HHHHHHHHHHHHHHHHHHHHHH'],
+    ['Galih Prasetyo',   'THHHTHHHTHHHHHHTHHHHHH'],
+  ];
+  const cls = {H:['b-ok','H'],T:['b-warn','T'],I:['b-info','I'],S:['b-vio','S'],
+               A:['b-dang','A'],L:['b-mut','·']};
+  let h = '<thead><tr><th style="position:sticky;left:0;background:var(--surface-2);z-index:2;'
+        + 'min-width:150px">Nama Siswa</th>';
+  days.forEach(d=>h+=`<th style="text-align:center;padding:9px 5px;min-width:26px">${d}</th>`);
+  h += '<th style="text-align:center;background:var(--ok-bg);color:var(--ok)">H</th>'
+    +  '<th style="text-align:center;background:var(--warn-bg);color:var(--warn)">T</th>'
+    +  '<th style="text-align:center;background:var(--info-bg);color:var(--info)">I</th>'
+    +  '<th style="text-align:center;background:var(--violet-bg);color:var(--violet)">S</th>'
+    +  '<th style="text-align:center;background:var(--danger-bg);color:var(--danger)">A</th>'
+    +  '<th style="text-align:center">% Hadir</th></tr></thead><tbody>';
+  rows.forEach(([nama, seq])=>{
+    const cnt = {H:0,T:0,I:0,S:0,A:0};
+    let cells = '';
+    seq.split('').forEach((ch,i)=>{
+      cnt[ch] = (cnt[ch]||0)+1;
+      const [c,label] = cls[ch] || cls.L;
+      cells += `<td style="text-align:center;padding:5px 4px">`
+             + `<span class="badge ${c}" style="min-width:19px;justify-content:center;padding:2px 4px;`
+             + `font-size:10px" title="${days[i]} Sep">${label}</span></td>`;
+    });
+    const eff = seq.length;
+    const pct = (100*(cnt.H+cnt.T)/eff).toFixed(1);
+    const col = pct>=95?'var(--ok)':pct>=85?'var(--warn)':'var(--danger)';
+    h += `<tr><td style="position:sticky;left:0;background:var(--surface);font-weight:600;z-index:1">`
+       + `${nama}</td>${cells}`
+       + `<td class="num" style="text-align:center;font-weight:700">${cnt.H}</td>`
+       + `<td class="num" style="text-align:center">${cnt.T||'—'}</td>`
+       + `<td class="num" style="text-align:center">${cnt.I||'—'}</td>`
+       + `<td class="num" style="text-align:center">${cnt.S||'—'}</td>`
+       + `<td class="num" style="text-align:center">${cnt.A||'—'}</td>`
+       + `<td class="num" style="text-align:center;font-weight:700;color:${col}">${pct}%</td></tr>`;
+  });
+  tbl.innerHTML = h + '</tbody>';
+})();
+
+/* ---- Simulasi scan masuk pada Konsol Scan ---- */
+(function(){
+  const el = document.querySelector('#s-scan .card');
+  if(!el) return;
+  let n = 0;
+  setInterval(()=>{
+    if(!document.getElementById('s-scan').classList.contains('on')) return;
+    n++;
+    el.style.transition = 'none';
+    el.style.transform = 'scale(1.004)';
+    setTimeout(()=>{ el.style.transition='transform .35s'; el.style.transform='scale(1)'; }, 60);
+  }, 5000);
+})();
+
+/* ---- Pemilih sumber input pada Konsol Scan ---- */
+function modeInput(mode){
+  const kamera = mode === 'kamera';
+  document.getElementById('panelKamera').hidden = !kamera;
+  document.getElementById('pilihKamera').hidden = !kamera;
+  document.getElementById('btnKamera').classList.toggle('btn-pri', kamera);
+  document.getElementById('btnSerial').classList.toggle('btn-pri', !kamera);
+  const lbl = document.getElementById('labelSumber');
+  lbl.textContent = kamera ? 'mode development — tanpa perangkat keras' : '3 scanner serial aktif';
+  lbl.className = 'badge ' + (kamera ? 'b-info' : 'b-mut');
+}
+
+/* ---- Mode "Kenali Scanner" ---- */
+let timerKenali = null;
+function stopKenali(){
+  clearInterval(timerKenali);
+  document.getElementById('panelKenali').hidden = true;
+  document.querySelectorAll('#s-scanner tbody tr').forEach(tr => tr.style.outline = '');
+}
+function mulaiKenali(){
+  const panel = document.getElementById('panelKenali');
+  const angka = document.getElementById('hitungMundur');
+  const judul = document.getElementById('judulKenali');
+  const pesan = document.getElementById('pesanKenali');
+  const ikon  = document.getElementById('ikonKenali');
+  panel.hidden = false;
+  ikon.textContent = '◎'; ikon.style.background = 'var(--primary)';
+  judul.textContent = 'Mode identifikasi aktif';
+  pesan.innerHTML = 'Tempelkan barcode apa saja — kartu siswa mana pun — di scanner yang ingin Anda beri nama. '
+    + 'Baris portnya akan langsung disorot di bawah. Scan selama mode ini <b>tidak dicatat sebagai presensi</b>.';
+  document.querySelectorAll('#s-scanner tbody tr').forEach(tr => tr.style.outline = '');
+
+  let sisa = 60;
+  angka.textContent = sisa;
+  clearInterval(timerKenali);
+  timerKenali = setInterval(() => {
+    sisa--;
+    angka.textContent = sisa;
+    // simulasi: pada detik ke-4 seolah ada scan masuk dari COM6
+    if (sisa === 56){
+      const baris = document.getElementById('port-com6');
+      baris.style.outline = '2px solid var(--primary)';
+      baris.scrollIntoView({block:'center', behavior:'smooth'});
+      ikon.textContent = '✓'; ikon.style.background = 'var(--ok)';
+      judul.textContent = 'Scanner ditemukan: COM6 (SN:J9K0L1M2)';
+      pesan.innerHTML = 'Scanner ini barusan dipakai. Isi <b>kode gerbang</b> dan <b>label</b>-nya '
+        + 'di baris yang disorot, lalu klik Simpan Pemetaan.';
+      baris.querySelector('input').focus();
+    }
+    if (sisa <= 0) stopKenali();
+  }, 1000);
+}
+
+/* ---- Buka layar dari hash URL ---- */
+go(location.hash ? location.hash.slice(1) : 'login');
+</script>
+</body>
+</html>

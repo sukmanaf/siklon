@@ -1,0 +1,150 @@
+generator client {
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
+  previewFeatures = ["partialIndexes"]
+  moduleFormat    = "esm"
+  runtime         = "nodejs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model academic_years {
+  id         Int       @id @default(autoincrement()) @db.SmallInt
+  name       String    @unique @db.VarChar(20)
+  start_date DateTime  @db.Date
+  end_date   DateTime  @db.Date
+  is_active  Boolean   @unique(map: "uq_academic_year_active", where: raw("is_active")) @default(false)
+  classes    classes[]
+}
+
+model attendance {
+  id              BigInt            @id @default(autoincrement())
+  student_id      String            @db.Uuid
+  class_id        String?           @db.Uuid
+  attendance_date DateTime          @db.Date
+  status          attendance_status
+  check_in_at     DateTime?         @db.Timestamptz(6)
+  check_out_at    DateTime?         @db.Timestamptz(6)
+  late_minutes    Int               @default(0) @db.SmallInt
+  device_code     String?           @db.VarChar(20)
+  note            String?
+  attachment_path String?
+  updated_by      String?           @db.Uuid
+  created_at      DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime          @default(now()) @db.Timestamptz(6)
+  classes         classes?          @relation(fields: [class_id], references: [id], onUpdate: NoAction)
+  students        students          @relation(fields: [student_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users           users?            @relation(fields: [updated_by], references: [id], onUpdate: NoAction)
+
+  @@unique([student_id, attendance_date])
+  @@index([attendance_date, class_id], map: "idx_att_date_class")
+  @@index([student_id, attendance_date(sort: Desc)], map: "idx_att_student_date")
+}
+
+model classes {
+  id               String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  academic_year_id Int            @db.SmallInt
+  name             String         @db.VarChar(30)
+  grade_level      Int?           @db.SmallInt
+  is_active        Boolean        @default(true)
+  created_at       DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime       @default(now()) @db.Timestamptz(6)
+  attendance       attendance[]
+  academic_years   academic_years @relation(fields: [academic_year_id], references: [id], onUpdate: NoAction)
+  students         students[]
+
+  @@unique([academic_year_id, name])
+}
+
+model holidays {
+  holiday_date DateTime @id @db.Date
+  name         String   @db.VarChar(120)
+}
+
+model settings {
+  key        String   @id @db.VarChar(64)
+  value      Json
+  updated_at DateTime @default(now()) @db.Timestamptz(6)
+}
+
+model students {
+  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nis            String        @unique @db.VarChar(20)
+  full_name      String        @db.VarChar(120)
+  class_id       String?       @db.Uuid
+  guardian_phone String?       @db.VarChar(20)
+  notify         Boolean       @default(true)
+  photo_path     String?
+  is_active      Boolean       @default(true)
+  created_at     DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime      @default(now()) @db.Timestamptz(6)
+  attendance     attendance[]
+  classes        classes?      @relation(fields: [class_id], references: [id], onUpdate: NoAction)
+  wa_messages    wa_messages[]
+
+  @@index([class_id], map: "idx_students_class", where: raw("is_active"))
+  @@index([full_name(ops: raw("gin_trgm_ops"))], map: "idx_students_name", type: Gin)
+  @@index([guardian_phone], map: "idx_students_guardian_phone")
+}
+
+model users {
+  id                   String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  username             String       @unique @db.VarChar(50)
+  password_hash        String
+  full_name            String       @db.VarChar(120)
+  role                 user_role    @default(ADMIN)
+  is_active            Boolean      @default(true)
+  must_change_password Boolean      @default(true)
+  token_version        Int          @default(1)
+  last_login_at        DateTime?    @db.Timestamptz(6)
+  last_login_ip        String?      @db.Inet
+  created_at           DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime     @default(now()) @db.Timestamptz(6)
+  attendance           attendance[]
+}
+
+model wa_messages {
+  id         BigInt         @id @default(autoincrement())
+  student_id String?        @db.Uuid
+  phone      String         @db.VarChar(20)
+  body       String
+  event      String         @db.VarChar(20)
+  status     message_status @default(QUEUED)
+  attempts   Int            @default(0) @db.SmallInt
+  last_error String?
+  created_at DateTime       @default(now()) @db.Timestamptz(6)
+  sent_at    DateTime?      @db.Timestamptz(6)
+  students   students?      @relation(fields: [student_id], references: [id], onUpdate: NoAction)
+
+  @@index([created_at], map: "idx_wa_queue", where: raw("(status = 'QUEUED'::message_status)"))
+  @@index([created_at(sort: Desc)], map: "idx_wa_recent")
+}
+
+model schema_migrations {
+  nama          String   @id
+  checksum      String
+  dijalankan_at DateTime @default(now()) @db.Timestamptz(6)
+}
+
+enum attendance_status {
+  HADIR
+  TERLAMBAT
+  IZIN
+  SAKIT
+  ALPA
+}
+
+enum message_status {
+  QUEUED
+  SENT
+  FAILED
+  CANCELLED
+}
+
+enum user_role {
+  SUPER_ADMIN
+  ADMIN
+}

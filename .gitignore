@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.next/
+.env
+.env.local
+storage/
+*.log
+*.tsbuildinfo
+.DS_Store
+apps/api/src/generated/
+presensee/
+dist-deploy/
+*.zip
+*.tar
+.claude
+presensee.zip

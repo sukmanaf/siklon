@@ -1,0 +1,171 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+/*
+ * Token desain SIKLON — diturunkan langsung dari mockup/index.html.
+ * Sumber kebenaran warna ada di berkas ini; jangan menulis nilai heksadesimal
+ * di komponen. Kalau butuh warna baru, tambahkan tokennya di sini dulu.
+ *
+ * Tema gelap dipilih lewat atribut [data-theme="dark"] pada <html>, sama
+ * seperti mockup. Atribut itu dipasang oleh skrip pemblokir di <head>
+ * (lihat ScriptTema) supaya halaman tidak berkedip putih saat dimuat ulang.
+ */
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+:root {
+  --bg: #f1f5f9;
+  --surface: #ffffff;
+  --surface-2: #f8fafc;
+  --border-c: #e2e8f0;
+  --text: #0f172a;
+  --muted: #64748b;
+  --faint: #94a3b8;
+
+  --primary: #4f46e5;
+  --primary-soft: #eef2ff;
+  --primary-ink: #3730a3;
+
+  --sidebar-c: #111827;
+  --sidebar-ink: #cbd5e1;
+  --sidebar-active: #1f2937;
+  --sidebar-label: #4b5563;
+
+  /* Warna status presensi. Pasangan <warna teks> + <warna latar lembut>. */
+  --ok: #16a34a;
+  --ok-bg: #dcfce7;
+  --warn: #d97706;
+  --warn-bg: #fef3c7;
+  --info: #0284c7;
+  --info-bg: #e0f2fe;
+  --violet: #7c3aed;
+  --violet-bg: #ede9fe;
+  --danger: #dc2626;
+  --danger-bg: #fee2e2;
+  --neutral: #64748b;
+  --neutral-bg: #f1f5f9;
+
+  --radius: 10px;
+  --shadow-card: 0 1px 2px rgb(15 23 42 / 0.06), 0 4px 12px rgb(15 23 42 / 0.05);
+}
+
+[data-theme='dark'] {
+  --bg: #0b1120;
+  --surface: #111827;
+  --surface-2: #0f172a;
+  --border-c: #1f2937;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --faint: #64748b;
+
+  --primary: #818cf8;
+  --primary-soft: #1e1b4b;
+  --primary-ink: #c7d2fe;
+
+  --sidebar-c: #020617;
+  --sidebar-ink: #94a3b8;
+  --sidebar-active: #111827;
+  --sidebar-label: #4b5563;
+
+  --ok: #4ade80;
+  --ok-bg: #052e16;
+  --warn: #fbbf24;
+  --warn-bg: #3b2506;
+  --info: #38bdf8;
+  --info-bg: #062b3f;
+  --violet: #a78bfa;
+  --violet-bg: #2b1a54;
+  --danger: #f87171;
+  --danger-bg: #3f1212;
+  --neutral: #94a3b8;
+  --neutral-bg: #1e293b;
+
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 12px rgb(0 0 0 / 0.3);
+}
+
+@theme inline {
+  /* Nama yang dipakai shadcn/ui, dipetakan ke token di atas. */
+  --color-background: var(--bg);
+  --color-foreground: var(--text);
+  --color-card: var(--surface);
+  --color-card-foreground: var(--text);
+  --color-popover: var(--surface);
+  --color-popover-foreground: var(--text);
+  --color-primary: var(--primary);
+  --color-primary-foreground: #ffffff;
+  --color-secondary: var(--surface-2);
+  --color-secondary-foreground: var(--text);
+  --color-muted: var(--surface-2);
+  --color-muted-foreground: var(--muted);
+  --color-accent: var(--surface-2);
+  --color-accent-foreground: var(--text);
+  --color-destructive: var(--danger);
+  --color-destructive-foreground: #ffffff;
+  --color-border: var(--border-c);
+  --color-input: var(--border-c);
+  --color-ring: var(--primary);
+
+  /* Token khas SIKLON. */
+  --color-surface-2: var(--surface-2);
+  --color-faint: var(--faint);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-ink: var(--primary-ink);
+  --color-sidebar: var(--sidebar-c);
+  --color-sidebar-ink: var(--sidebar-ink);
+  --color-sidebar-active: var(--sidebar-active);
+  --color-sidebar-label: var(--sidebar-label);
+
+  /*
+   * Warna status presensi. Satu-satunya sumber warna HADIR/TERLAMBAT/IZIN/
+   * SAKIT/ALPA di seluruh aplikasi — dipakai lewat komponen StatusBadge.
+   */
+  --color-hadir: var(--ok);
+  --color-hadir-bg: var(--ok-bg);
+  --color-terlambat: var(--warn);
+  --color-terlambat-bg: var(--warn-bg);
+  --color-izin: var(--info);
+  --color-izin-bg: var(--info-bg);
+  --color-sakit: var(--violet);
+  --color-sakit-bg: var(--violet-bg);
+  --color-alpa: var(--danger);
+  --color-alpa-bg: var(--danger-bg);
+  --color-libur: var(--neutral);
+  --color-libur-bg: var(--neutral-bg);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --shadow-card: var(--shadow-card);
+
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    /* Mencegah pergeseran layout saat dialog mengunci scroll. */
+    scrollbar-gutter: stable;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans text-sm antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-semibold tracking-tight;
+  }
+
+  /* Angka pada tabel harus rata kolom. */
+  .num {
+    @apply font-mono text-xs;
+    font-variant-numeric: tabular-nums;
+  }
+}

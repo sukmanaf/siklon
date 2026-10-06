@@ -1,0 +1,23 @@
+{
+  "name": "@siklon/scanner-agent",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Membaca scanner barcode di PC gerbang dan mengirimkan hasilnya ke server PresenSee",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "ports": "tsx src/cli-ports.ts"
+  },
+  "dependencies": {
+    "serialport": "^13.0.0",
+    "socket.io-client": "^4.8.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.5.0",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2"
+  }
+}

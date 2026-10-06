@@ -1,0 +1,14 @@
+{
+  "name": "@siklon/uji",
+  "private": true,
+  "type": "module",
+  "description": "Uji ujung-ke-ujung SIKLON lewat browser sungguhan",
+  "scripts": {
+    "uji": "node jalankan.mjs"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0",
+    "puppeteer-core": "^24.43.1",
+    "qrcode": "^1.5.4"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "name": "siklon",
+  "version": "1.0.6",
+  "private": true,
+  "description": "Sistem presensi siswa — scan QR kartu siswa, notifikasi WhatsApp ke wali murid",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @siklon/shared build && pnpm --filter @siklon/api dev",
+    "dev:web": "pnpm --filter @siklon/web dev",
+    "build": "pnpm --filter @siklon/shared build && pnpm --filter @siklon/api build && pnpm --filter @siklon/web build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "db:schema": "psql -h localhost -U postgres -d absen -v ON_ERROR_STOP=1 -f database/schema.sql",
+    "db:seed": "pnpm --filter @siklon/api db:seed",
+    "bundle:deploy": "node tools/buat-paket-deploy.mjs"
+  },
+  "dependencies": {
+    "zod": "^4.5.4"
+  }
+}

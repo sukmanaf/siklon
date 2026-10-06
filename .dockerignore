@@ -1,0 +1,10 @@
+node_modules
+dist
+.next
+dist-deploy
+dist-deploy.zip
+storage
+.git
+*.log
+.env
+.env.local

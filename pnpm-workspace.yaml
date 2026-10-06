@@ -1,0 +1,19 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+
+# pnpm 11: hanya paket di daftar ini yang boleh menjalankan build script saat install.
+# Catatan: pnpm suka MENAMBAHKAN sendiri entri baru ke berkas ini dengan nilai
+# placeholder "set this to true or false" saat menemukan paket yang butuh build.
+# Kalau itu terjadi, YAML-nya jadi punya kunci duplikat dan install gagal —
+# perbaiki dengan mengganti placeholder itu menjadi true/false.
+allowBuilds:
+  esbuild: true
+  prisma: true
+  '@prisma/engines': true
+  '@node-rs/argon2': true
+  '@whiskeysockets/baileys': true
+  protobufjs: true
+  '@serialport/bindings-cpp': true
+minimumReleaseAgeExclude:
+  - lucide-react@1.43.0
