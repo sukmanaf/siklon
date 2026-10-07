@@ -14,10 +14,33 @@ namespace ScannerAgent
         [DllImport("kernel32.dll")]
         static extern bool AllocConsole();
 
+        [DllImport("kernel32.dll", SetLastError = true)]
+        static extern IntPtr GetStdHandle(int nStdHandle);
+
+        [DllImport("kernel32.dll")]
+        static extern bool GetConsoleMode(IntPtr hConsoleHandle, out uint lpMode);
+
+        [DllImport("kernel32.dll")]
+        static extern bool SetConsoleMode(IntPtr hConsoleHandle, uint dwMode);
+
+        const int STD_INPUT_HANDLE = -10;
+        const uint ENABLE_QUICK_EDIT = 0x0040;
+        const uint ENABLE_EXTENDED_FLAGS = 0x0080;
+
         [STAThread]
         static void Main()
         {
             AllocConsole();
+            
+            // Nonaktifkan QuickEdit agar klik mouse di terminal tidak mem-pause aplikasi
+            IntPtr consoleHandle = GetStdHandle(STD_INPUT_HANDLE);
+            if (GetConsoleMode(consoleHandle, out uint consoleMode))
+            {
+                consoleMode &= ~ENABLE_QUICK_EDIT;
+                consoleMode |= ENABLE_EXTENDED_FLAGS;
+                SetConsoleMode(consoleHandle, consoleMode);
+            }
+
             Console.WriteLine("========================================");
             Console.WriteLine(" PRESENSEE MULTI-SCANNER AGENT (ACTIVE) ");
             Console.WriteLine("========================================");
