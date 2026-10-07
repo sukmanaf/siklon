@@ -34,7 +34,8 @@ namespace ScannerAgent
             
             // Nonaktifkan QuickEdit agar klik mouse di terminal tidak mem-pause aplikasi
             IntPtr consoleHandle = GetStdHandle(STD_INPUT_HANDLE);
-            if (GetConsoleMode(consoleHandle, out uint consoleMode))
+            uint consoleMode;
+            if (GetConsoleMode(consoleHandle, out consoleMode))
             {
                 consoleMode &= ~ENABLE_QUICK_EDIT;
                 consoleMode |= ENABLE_EXTENDED_FLAGS;
