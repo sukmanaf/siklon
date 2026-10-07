@@ -173,6 +173,9 @@ export default function HalamanKonsolScan() {
 
   const tanganiHasil = useCallback(
     (h: HasilScan) => {
+      // Abaikan sepenuhnya jika NIS salah (jangan masuk tabel, jangan bunyi, jangan ada notif)
+      if (h.kode === 'NIS_TIDAK_DITEMUKAN') return;
+
       setHasilTerakhir(h);
       tambahRiwayat(h);
       if (bunyiAktif) {

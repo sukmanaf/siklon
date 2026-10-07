@@ -1,8 +1,8 @@
 import type { HasilScan } from '@siklon/shared';
 import { prisma } from '../../lib/prisma.js';
-import { jamDetikLokal, jamLokal, tanggalKeKolomDate, tanggalLokal } from '../../lib/waktu.js';
+import { jamDetikLokal, jamLokal, tanggalKeKolomDate, tanggalLokal, menitDalamHari, menitKeJam } from '../../lib/waktu.js';
 import { ambil as ambilSetting } from '../settings/settings.service.js';
-import { sudahJamPulang, tentukanStatus } from './resolver.js';
+import { sudahJamPulang, tentukanStatus, aturanUntukTanggal } from './resolver.js';
 import { logger } from '../../config/logger.js';
 import { antrekanAman } from '../whatsapp/antrean.service.js';
 
@@ -71,6 +71,23 @@ export async function prosesScan(req: PermintaanScan): Promise<HasilScan> {
 
   if (hasil.jenis === 'HARI_LIBUR') {
     return { ok: false, kode: 'HARI_LIBUR', pesan: hasil.alasan, siswa: info, ...dasar };
+  }
+
+  // Cek batas akhir masuk / pulang (menolak absen di luar jam operasional yang diizinkan)
+  if (!req.manual) {
+    const aturan = aturanUntukTanggal(presensi, req.waktu);
+    const menit = menitDalamHari(req.waktu);
+    const pulang = sudahJamPulang(presensi, req.waktu);
+
+    if (pulang) {
+      if (aturan.batasAkhirPulangMenit !== null && menit > aturan.batasAkhirPulangMenit) {
+        return { ok: false, kode: 'BATAS_WAKTU', pesan: `Batas akhir absen pulang adalah pukul ${menitKeJam(aturan.batasAkhirPulangMenit)}`, siswa: info, ...dasar };
+      }
+    } else {
+      if (aturan.batasAkhirMasukMenit !== null && menit > aturan.batasAkhirMasukMenit) {
+        return { ok: false, kode: 'BATAS_WAKTU', pesan: `Batas akhir absen masuk adalah pukul ${menitKeJam(aturan.batasAkhirMasukMenit)}`, siswa: info, ...dasar };
+      }
+    }
   }
 
   /*

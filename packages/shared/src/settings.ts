@@ -15,6 +15,10 @@ export const skemaPresensi = z.object({
    * jam masuk — dicatat sebagai absen pulang, bukan ditolak sebagai "sudah absen".
    */
   jam_pulang: jam,
+  /** Batas akhir menolak scan masuk. (Opsional, kosong = tidak ada batas) */
+  batas_akhir_masuk: jam.optional().nullable(),
+  /** Batas akhir menolak scan pulang. (Opsional, kosong = tidak ada batas) */
+  batas_akhir_pulang: jam.optional().nullable(),
   /** 0=Minggu … 6=Sabtu */
   hari_sekolah: z.array(z.number().int().min(0).max(6)).min(1),
   /** Override per hari; hanya kunci yang ditulis yang menimpa nilai utama. */
@@ -26,6 +30,8 @@ export const skemaPresensi = z.object({
         toleransi_menit: z.number().int().min(0).max(120).optional(),
         batas_alpa: jam.optional(),
         jam_pulang: jam.optional(),
+        batas_akhir_masuk: jam.optional().nullable(),
+        batas_akhir_pulang: jam.optional().nullable(),
       }),
     )
     .default({}),

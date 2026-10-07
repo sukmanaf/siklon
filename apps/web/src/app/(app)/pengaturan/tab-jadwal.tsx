@@ -158,6 +158,34 @@ export function TabJadwal({ awal }: { awal: Presensi }) {
             </div>
 
             <div className="space-y-1.5">
+              <Label htmlFor="batas-akhir-masuk">Batas akhir masuk</Label>
+              <Input
+                id="batas-akhir-masuk"
+                type="time"
+                value={nilai.batas_akhir_masuk ?? ''}
+                onChange={(e) => ubah('batas_akhir_masuk', e.target.value || null)}
+                className="num w-[120px]"
+              />
+              <p className="max-w-48 text-[11.5px] leading-relaxed text-muted-foreground">
+                Setelah jam ini, absen masuk ditolak aktif. Kosongkan untuk tanpa batas.
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="batas-akhir-pulang">Batas akhir pulang</Label>
+              <Input
+                id="batas-akhir-pulang"
+                type="time"
+                value={nilai.batas_akhir_pulang ?? ''}
+                onChange={(e) => ubah('batas_akhir_pulang', e.target.value || null)}
+                className="num w-[120px]"
+              />
+              <p className="max-w-48 text-[11.5px] leading-relaxed text-muted-foreground">
+                Setelah jam ini, absen pulang ditolak aktif. Kosongkan untuk tanpa batas.
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
               <Label>Hari sekolah</Label>
               <div className="flex flex-wrap gap-1.5">
                 {HARI_PENDEK.map((h, dow) => {
@@ -243,6 +271,40 @@ export function TabJadwal({ awal }: { awal: Presensi }) {
                           ubah('khusus', {
                             ...nilai.khusus,
                             [dow]: { ...o, jam_pulang: e.target.value || undefined },
+                          })
+                        }
+                        className="num w-[112px]"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label htmlFor={`k-batas-masuk-${dow}`}>Bts A. Masuk</Label>
+                      <Input
+                        id={`k-batas-masuk-${dow}`}
+                        type="time"
+                        value={o?.batas_akhir_masuk ?? ''}
+                        placeholder={nilai.batas_akhir_masuk ?? ''}
+                        onChange={(e) =>
+                          ubah('khusus', {
+                            ...nilai.khusus,
+                            [dow]: { ...o, batas_akhir_masuk: e.target.value || undefined },
+                          })
+                        }
+                        className="num w-[112px]"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label htmlFor={`k-batas-pulang-${dow}`}>Bts A. Pulang</Label>
+                      <Input
+                        id={`k-batas-pulang-${dow}`}
+                        type="time"
+                        value={o?.batas_akhir_pulang ?? ''}
+                        placeholder={nilai.batas_akhir_pulang ?? ''}
+                        onChange={(e) =>
+                          ubah('khusus', {
+                            ...nilai.khusus,
+                            [dow]: { ...o, batas_akhir_pulang: e.target.value || undefined },
                           })
                         }
                         className="num w-[112px]"

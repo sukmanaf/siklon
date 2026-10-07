@@ -45,6 +45,7 @@ namespace ScannerAgent
         struct RAWKEYBOARD { public ushort MakeCode; public ushort Flags; public ushort Reserved; public ushort VKey; public uint Message; public uint ExtraInformation; }
 
         Dictionary<IntPtr, string> buffers = new Dictionary<IntPtr, string>();
+        Dictionary<IntPtr, DateTime> lastKeyTimes = new Dictionary<IntPtr, DateTime>();
         string apiUrl = "http://localhost:5000";
         string apiKey = "presensee-scanner-api-key-2026";
 
@@ -119,7 +120,22 @@ namespace ScannerAgent
 
         void ProcessKey(IntPtr deviceId, ushort vkey)
         {
-            if (!buffers.ContainsKey(deviceId)) buffers[deviceId] = "";
+            DateTime now = DateTime.Now;
+            
+            if (!buffers.ContainsKey(deviceId)) {
+                buffers[deviceId] = "";
+                lastKeyTimes[deviceId] = now;
+            }
+
+            // Jika jeda antar karakter melebihi 60ms, ini pasti ketikan manusia, bukan scanner.
+            // Reset buffer agar ketikan biasa tidak tertangkap sebagai NIS.
+            if ((now - lastKeyTimes[deviceId]).TotalMilliseconds > 60)
+            {
+                buffers[deviceId] = "";
+            }
+            
+            lastKeyTimes[deviceId] = now;
+
             if (vkey == 13) // Enter
             { 
                 string nis = buffers[deviceId];

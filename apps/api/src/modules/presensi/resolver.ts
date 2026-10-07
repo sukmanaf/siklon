@@ -13,6 +13,8 @@ export type AturanHari = {
   batasTerlambatMenit: number;
   batasAlpaMenit: number;
   jamPulangMenit: number;
+  batasAkhirMasukMenit: number | null;
+  batasAkhirPulangMenit: number | null;
 };
 
 /**
@@ -25,6 +27,8 @@ export function aturanUntukHari(presensi: Presensi, hari: number): AturanHari {
   const toleransiMenit = khusus.toleransi_menit ?? presensi.toleransi_menit;
   const batasAlpa = khusus.batas_alpa ?? presensi.batas_alpa;
   const jamPulang = khusus.jam_pulang ?? presensi.jam_pulang;
+  const batasAkhirMasuk = khusus.batas_akhir_masuk ?? presensi.batas_akhir_masuk;
+  const batasAkhirPulang = khusus.batas_akhir_pulang ?? presensi.batas_akhir_pulang;
 
   return {
     hari,
@@ -36,6 +40,8 @@ export function aturanUntukHari(presensi: Presensi, hari: number): AturanHari {
     batasTerlambatMenit: jamKeMenit(jamMasuk) + toleransiMenit,
     batasAlpaMenit: jamKeMenit(batasAlpa),
     jamPulangMenit: jamKeMenit(jamPulang),
+    batasAkhirMasukMenit: batasAkhirMasuk ? jamKeMenit(batasAkhirMasuk) : null,
+    batasAkhirPulangMenit: batasAkhirPulang ? jamKeMenit(batasAkhirPulang) : null,
   };
 }
 

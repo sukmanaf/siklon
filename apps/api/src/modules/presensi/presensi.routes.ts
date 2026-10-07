@@ -56,7 +56,9 @@ async function jalankanScan(input: z.infer<typeof skemaSatuScan>) {
     input.gate ?? (input.portPath ? ((await scanner.kodeDariPort(input.portPath)) ?? 'TIDAK_DIKENAL') : 'TIDAK_DIKENAL');
 
   const hasil = await prosesScan({ nis: input.nis, titikScan, waktu });
-  siarkanScan(hasil);
+  if (hasil.kode !== 'NIS_TIDAK_DITEMUKAN') {
+    siarkanScan(hasil);
+  }
   return hasil;
 }
 
@@ -156,7 +158,9 @@ presensiRouter.post(
       nis: data.nis,
       waktu: data.waktu ? new Date(data.waktu) : new Date(),
     });
-    siarkanScan(hasil);
+    if (hasil.kode !== 'NIS_TIDAK_DITEMUKAN') {
+      siarkanScan(hasil);
+    }
     return kirim(res, hasil);
   }),
 );
