@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --port 3000",
-    "build": "next build",
+    "build": "tsc -p ../../packages/shared/tsconfig.build.json && next build",
     "start": "next start --port 3000",
     "typecheck": "tsc --noEmit"
   },
