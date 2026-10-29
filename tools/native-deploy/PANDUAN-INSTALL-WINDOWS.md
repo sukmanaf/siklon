@@ -44,7 +44,7 @@ lebih dari satu gerbang dan tiap gerbang punya PC sendiri.
 4. Kalau PostgreSQL memang baru dipasang di langkah ini, skrip membuatkan
    password acak sendiri (tidak perlu diketik) — **tidak perlu diingat**,
    sudah tersimpan otomatis untuk dipakai aplikasi.
-5. Di akhir, browser akan diarahkan ke `http://localhost:3000`.
+5. Di akhir, browser akan diarahkan ke `http://localhost:3050`.
 6. **Akun Login Bawaan**:
    - **Username**: `superadmin` (atau `admin` untuk peran Admin Tata Usaha)
    - **Password**: `siklon123`
@@ -53,29 +53,33 @@ lebih dari satu gerbang dan tiap gerbang punya PC sendiri.
 
 ### 📷 LANGKAH 3: Pemasangan USB Barcode / QR Scanner
 
-Kalau tadi menjawab **Y** untuk Scanner Agent, `install.bat` sudah otomatis
-memasangnya. Kalau belum atau mau ditambah scanner lagi:
-
+Jika memakai scanner barcode USB biasa (mode keyboard), `install.bat` sudah otomatis merakit dan menyalakan **Agen Scanner C# Raw Input** di latar belakang.
+Jika memakai scanner Serial COM:
 1. Colokkan kabel USB scanner 2D ke PC.
 2. Pindai QR setup **"USB Virtual COM Port"** atau **"RS232 Emulation"** dari
-   buku manual bawaan scanner fisik (kalau tersedia — sebagian scanner
-   defaultnya sudah mode keyboard dan tidak perlu diubah, lihat catatan di
-   `apps\scanner-agent\README.md`).
+   buku manual bawaan scanner fisik.
 3. Buka folder `apps\scanner-agent`, pastikan `config.json` ada (dibuat
    otomatis oleh `install.bat`).
 4. Klik kanan `install-service.bat`, pilih **Run as administrator**.
-5. Buka `http://localhost:3000`, masuk ke menu **Scanner**, klik
+5. Buka `http://localhost:3050`, masuk ke menu **Scanner**, klik
    **Kenali Scanner**, lalu scan salah satu QR siswa untuk memberi nama
    gerbang (contoh: `"Gerbang Utama"`).
 
 ### 🖥️ LANGKAH 4: Mode Layar Penuh (Kiosk) di Gerbang
 
-1. Buka browser ke `http://localhost:3000/scan`.
+1. Buka browser ke `http://localhost:3050/scan`.
 2. Tekan **`F11`** untuk masuk mode Layar Penuh.
 
-### ⚙️ LANGKAH 5: Otomatis Menyala Saat PC Dinyalakan
+### 💾 LANGKAH 5: Pencadangan Database Otomatis (Auto-Backup & Rotasi 7 Hari)
 
-Layanan API dan Web (dan Scanner Agent kalau dipasang) **sudah otomatis
+1. Sistem otomatis mendaftarkan jadwal backup harian di Windows Task Scheduler setiap pukul **09:00 pagi**.
+2. Berkas cadangan disimpan rapi di dalam folder `backupdb\` (contoh: `backupdb\presensee_2026-10-15_0900.sql`).
+3. Berkas backup yang usianya sudah **lebih dari 7 hari otomatis dihapus**, sehingga ruang penyimpanan tidak akan penuh.
+4. Anda juga bisa melakukan backup manual kapan saja dengan mengklik 2x file **`BACKUP-DATABASE.bat`**.
+
+### ⚙️ LANGKAH 6: Otomatis Menyala Saat PC Dinyalakan
+
+Layanan Database (port 5433), API (port 5050), dan Web (port 3050) **sudah otomatis
 menyala sendiri** tiap PC dinyalakan — ini bawaan cara `install.bat`
 mendaftarkannya sebagai layanan Windows (NSSM), tidak perlu langkah
 tambahan seperti folder Startup.
@@ -84,7 +88,7 @@ Kalau ingin browser juga otomatis terbuka: taruh pintasan `jalankan.bat` di
 folder Startup (`Win+R` → ketik `shell:startup` → Enter → taruh pintasan
 di situ).
 
-### 🔴 LANGKAH 6: Menghentikan / Mencopot
+### 🔴 LANGKAH 7: Menghentikan / Mencopot
 
 - **Hentikan sementara** (mis. sebelum matikan PC sore hari — sebenarnya
   tidak wajib, layanan aman dibiarkan menyala): klik 2x `hentikan.bat`.
@@ -104,31 +108,24 @@ sekali** di PC ini.
 
 1. Buka Command Prompt, ketik `ipconfig`, catat IP lokalnya (contoh:
    `192.168.1.100`).
-2. Pastikan Port `5000` diizinkan di Windows Firewall PC server.
+2. Pastikan Port `5050` (API) dan Port `3050` (Web) diizinkan di Windows Firewall PC server.
 
 ### Di PC Client (PC gerbang tambahan):
 
-1. **TIDAK PERLU** pasang PostgreSQL atau menjalankan `install.bat` di PC
-   ini sama sekali.
-2. Salin folder `apps\scanner-agent` saja (dari paket ini) ke PC client.
-3. Pasang Node.js 22 ke atas di PC ini — boleh pakai `installer\node-*.msi`
-   yang ada di paket ini, atau unduh sendiri dari nodejs.org.
-4. Buka `apps\scanner-agent\config.json`, ganti `apiUrl` mengarah ke IP PC
-   server:
+1. **TIDAK PERLU** pasang PostgreSQL, Node.js, atau menjalankan `install.bat` di PC client sama sekali.
+2. Salin folder `apps\scanner-agent` ke PC client / pos satpam. (Agent All-in-One ini otomatis mendukung scanner USB biasa maupun Serial COM).
+3. Buka `config.json` di PC client tersebut menggunakan Notepad, ubah `apiUrl` ke IP server utama (atau domain cloud jika hosting):
    ```json
    {
-     "apiUrl": "http://192.168.1.100:5000",
-     "apiKey": "presensee-scanner-api-key-2026"
+     "apiUrl": "http://192.168.1.100:5050/api/v1",
+     "apiKey": "presensee-scanner-api-key-2026",
+     "gate": "GERBANG_2",
+     "mode": "AUTO"
    }
    ```
-5. Colokkan USB scanner, pindai QR setup mode serial dari manualnya (kalau
-   ada).
-6. Klik kanan `install-service.bat` di PC client ini → **Run as
-   administrator**.
-7. Buka browser di PC client ke `http://192.168.1.100:3000/scanner`, klik
-   **Kenali Scanner**, scan QR siswa di PC ini, beri nama `"Gerbang 2"`.
-8. Untuk layar presensi di PC client ini, buka
-   `http://192.168.1.100:3000/scan`.
+4. Klik ganda `AgenScanner.exe` (atau rakit dulu lewat `RakitAplikasi.bat` jika belum ada). Aplikasi C# langsung aktif tanpa install Node.js!
+5. Untuk memunculkan tampilan presensi real-time di PC client, buka browser ke:
+   `http://192.168.1.100:3050/scan`
 
 ---
 

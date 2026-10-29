@@ -11,7 +11,7 @@
  *       cd apps/web && NEXT_PUBLIC_API_URL=http://localhost:5000/api/v1 pnpm exec next build
  *   - apps/scanner-agent/dist sudah di-build (lihat tools/buat-paket-deploy.mjs)
  *   - packages/shared/dist sudah di-build
- *   - Tiga installer ada di data/: node-*.msi, postgresql-*.exe, nssm-2.24/
+ *   - Installer ada di data/: node-*.msi, nssm-2.24/
  *
  * Jalankan: node tools/buat-paket-native.mjs
  */
@@ -21,7 +21,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(__dirname, '..');
-const OUT_DIR = path.join(ROOT_DIR, 'presensee_build');
+const OUT_DIR = path.join(ROOT_DIR, 'presensee_native');
 const DATA_DIR = path.join(ROOT_DIR, 'data');
 
 function gagal(pesan) {
@@ -51,32 +51,35 @@ const apiDist = path.join(ROOT_DIR, 'apps/api/dist');
 const webStandalone = path.join(ROOT_DIR, 'apps/web/.next/standalone');
 const webStatic = path.join(ROOT_DIR, 'apps/web/.next/static');
 const sharedDist = path.join(ROOT_DIR, 'packages/shared/dist');
-const agentDist = path.join(ROOT_DIR, 'apps/scanner-agent/dist');
-
 for (const [label, p] of [
   ['apps/api/dist', apiDist],
   ['apps/web/.next/standalone', webStandalone],
   ['apps/web/.next/static', webStatic],
   ['packages/shared/dist', sharedDist],
-  ['apps/scanner-agent/dist', agentDist],
 ]) {
   if (!fs.existsSync(p)) gagal(`${label} tidak ada. Build dulu sebelum menjalankan skrip ini.`);
 }
 
 const nodeMsi = fs.readdirSync(DATA_DIR).find((f) => /^node-.*\.msi$/i.test(f));
+const pgZip = fs.readdirSync(DATA_DIR).find((f) => /^postgresql-.*\.zip$/i.test(f));
 const pgExe = fs.readdirSync(DATA_DIR).find((f) => /^postgresql-.*\.exe$/i.test(f));
 const nssmExe = path.join(DATA_DIR, 'nssm-2.24/win64/nssm.exe');
 if (!nodeMsi) gagal('Installer Node.js (.msi) tidak ditemukan di data/');
-if (!pgExe) gagal('Installer PostgreSQL (.exe) tidak ditemukan di data/');
+if (pgZip) {
+  console.log(`   [OK] PostgreSQL Portable (ZIP): ${pgZip}`);
+} else if (pgExe) {
+  console.log(`   [OK] PostgreSQL Installer (EXE): ${pgExe}`);
+} else {
+  console.log('   [INFO] Berkas PostgreSQL (.zip/.exe) tidak ada di data/ - dilewati.');
+}
 if (!fs.existsSync(nssmExe)) gagal(`nssm.exe tidak ditemukan di ${nssmExe}`);
 console.log(`   [OK] Node.js: ${nodeMsi}`);
-console.log(`   [OK] PostgreSQL: ${pgExe}`);
 console.log(`   [OK] NSSM: ${nssmExe}`);
 
 // ---------------------------------------------------------------------
 // 1. Bersihkan & siapkan folder output
 // ---------------------------------------------------------------------
-console.log('\n🧹 [1/6] Menyiapkan folder presensee_build/...');
+console.log('\n🧹 [1/6] Menyiapkan folder presensee_native/...');
 if (fs.existsSync(OUT_DIR)) fs.rmSync(OUT_DIR, { recursive: true, force: true });
 fs.mkdirSync(OUT_DIR, { recursive: true });
 
@@ -134,28 +137,35 @@ copyDir(webStandalone, path.join(OUT_DIR, 'apps/web'));
 copyDir(webStatic, path.join(OUT_DIR, 'apps/web/apps/web/.next/static'));
 
 // ---------------------------------------------------------------------
-// 5. apps/scanner-agent — pola sama seperti tools/buat-paket-deploy.mjs
+// 5. apps/scanner-agent (C# Native All-in-One)
 // ---------------------------------------------------------------------
-console.log('📂 [5/6] Menyalin apps/scanner-agent...');
-const agentFiles = [
-  'package.json',
-  'config.example.json',
-  'install-service.bat',
-  'uninstall-service.bat',
-  'README.md',
-];
+console.log('📂 [5/6] Menyalin scanner agent (C# Native All-in-One)...');
 const deployAgentDir = path.join(OUT_DIR, 'apps/scanner-agent');
 fs.mkdirSync(deployAgentDir, { recursive: true });
-for (const f of agentFiles) {
-  const src = path.join(ROOT_DIR, 'apps/scanner-agent', f);
-  if (!fs.existsSync(src)) continue;
-  if (f.endsWith('.bat')) copyAsCrlf(src, path.join(deployAgentDir, f));
-  else fs.copyFileSync(src, path.join(deployAgentDir, f));
+const agentSrcDir = path.join(ROOT_DIR, 'apps/scanner-agent');
+if (fs.existsSync(agentSrcDir)) {
+  for (const file of fs.readdirSync(agentSrcDir)) {
+    const src = path.join(agentSrcDir, file);
+    if (fs.statSync(src).isDirectory()) continue;
+    if (file.endsWith('.bat')) copyAsCrlf(src, path.join(deployAgentDir, file));
+    else fs.copyFileSync(src, path.join(deployAgentDir, file));
+  }
 }
-copyDir(agentDist, path.join(deployAgentDir, 'dist'));
 fs.writeFileSync(
   path.join(deployAgentDir, 'config.json'),
-  JSON.stringify({ apiUrl: 'http://localhost:5000', apiKey: 'presensee-scanner-api-key-2026' }, null, 2) + '\n',
+  JSON.stringify(
+    {
+      apiUrl: 'http://localhost:5050/api/v1',
+      apiKey: 'presensee-scanner-api-key-2026',
+      gate: '',
+      mode: 'AUTO',
+      port: 'AUTO',
+      baudRate: 9600,
+      debounceSeconds: 3,
+    },
+    null,
+    2,
+  ) + '\n',
   'utf-8',
 );
 
@@ -164,6 +174,7 @@ fs.writeFileSync(
 // ---------------------------------------------------------------------
 console.log('📂 [6/6] Menyalin database, installer, dan skrip pemasangan...');
 fs.mkdirSync(path.join(OUT_DIR, 'database/migrations'), { recursive: true });
+fs.mkdirSync(path.join(OUT_DIR, 'backupdb'), { recursive: true });
 for (const f of ['schema.sql', 'seed.sql', 'seed-esensial.sql', 'contoh-multi-kelas.sql']) {
   fs.copyFileSync(path.join(ROOT_DIR, 'database', f), path.join(OUT_DIR, 'database', f));
 }
@@ -175,11 +186,20 @@ for (const f of fs.readdirSync(path.join(ROOT_DIR, 'database/migrations'))) {
 
 fs.mkdirSync(path.join(OUT_DIR, 'installer'), { recursive: true });
 fs.copyFileSync(path.join(DATA_DIR, nodeMsi), path.join(OUT_DIR, `installer/${nodeMsi}`));
-fs.copyFileSync(path.join(DATA_DIR, pgExe), path.join(OUT_DIR, `installer/${pgExe}`));
+if (pgZip) {
+  console.log(`   [INFO] Menyalin ${pgZip} ke installer/...`);
+  fs.copyFileSync(path.join(DATA_DIR, pgZip), path.join(OUT_DIR, `installer/${pgZip}`));
+}
+if (pgExe) {
+  fs.copyFileSync(path.join(DATA_DIR, pgExe), path.join(OUT_DIR, `installer/${pgExe}`));
+}
 fs.copyFileSync(nssmExe, path.join(OUT_DIR, 'installer/nssm.exe'));
 
-for (const f of ['install.bat', 'jalankan.bat', 'hentikan.bat', 'uninstall.bat']) {
-  copyAsCrlf(path.join(__dirname, 'native-deploy', f), path.join(OUT_DIR, f));
+for (const f of ['install.bat', 'jalankan.bat', 'hentikan.bat', 'uninstall.bat', 'BUKA-APLIKASI.bat', 'BACKUP-DATABASE.bat']) {
+  const src = path.join(__dirname, 'native-deploy', f);
+  if (fs.existsSync(src)) {
+    copyAsCrlf(src, path.join(OUT_DIR, f));
+  }
 }
 fs.copyFileSync(
   path.join(__dirname, 'native-deploy/PANDUAN-INSTALL-WINDOWS.md'),
@@ -194,9 +214,9 @@ fs.writeFileSync(
 );
 
 console.log('\n====================================================================');
-console.log('✨ [BERHASIL] presensee_build/ siap.');
+console.log('✨ [BERHASIL] presensee_native/ siap.');
 console.log('====================================================================');
 console.log(`📁 Lokasi: ${OUT_DIR}`);
-console.log('📋 Langkah client: salin seluruh folder presensee_build ke PC Windows,');
+console.log('📋 Langkah client: salin seluruh folder presensee_native ke PC Windows,');
 console.log('   klik kanan install.bat → Run as administrator.');
 console.log('====================================================================\n');

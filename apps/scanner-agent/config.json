@@ -1,0 +1,10 @@
+{
+  "apiUrl": "http://localhost:5050/api/v1",
+  "apiKey": "presensee-scanner-api-key-2026",
+  "gate": "",
+  "mode": "AUTO",
+  "showConsole": false,
+  "port": "AUTO",
+  "baudRate": 9600,
+  "debounceSeconds": 3
+}

@@ -156,88 +156,212 @@ REM [3/6] PostgreSQL
 REM =====================================================================
 echo [3/6] Memeriksa PostgreSQL...
 >>"%LOGFILE%" echo [3/6] Memeriksa PostgreSQL...
-set "PG_ADA=0"
-sc query postgresql-x64-16 >nul 2>&1
-if not errorlevel 1 set "PG_ADA=1"
-where psql >nul 2>&1
-if not errorlevel 1 set "PG_ADA=1"
 
-REM Password database TETAP (bukan acak) — sengaja, supaya predictable
-REM tiap kali install ulang (mis. saat uji coba, PostgreSQL di-uninstall
-REM lalu dipasang lagi lewat skrip ini). Aman ditulis langsung: semua
-REM karakternya alfanumerik biasa, tidak ada yang bisa merusak baris
-REM perintah instalasi (pelajaran sesi ini soal tanda kutip/backslash yang
-REM salah tempat — password acak sebelumnya juga demi ini, tapi string
-REM tetap yang alfanumerik murni ini sama amannya).
 set "PG_PASSWORD=p0stgr3sql"
 set "PGPASSWORD=%PG_PASSWORD%"
 
-if "%PG_ADA%"=="1" (
-  echo   [OK] PostgreSQL sudah terpasang, dilewati.
-  >>"%LOGFILE%" echo   [OK] PostgreSQL sudah terpasang, dilewati.
-
-  REM Coba dulu password baku di atas — kalau PostgreSQL ini yang dipasang
-  REM skrip ini sebelumnya, otomatis cocok. Cuma tanya manual kalau
-  REM ternyata TIDAK cocok (berarti instalasi PostgreSQL lain yang tidak
-  REM berhubungan dengan PresenSee).
-  psql -h localhost -U postgres -c "SELECT 1" >nul 2>&1
-  if errorlevel 1 (
-    echo   [PENTING] Password baku tidak cocok - kemungkinan ini instalasi
-    echo   PostgreSQL LAIN yang sudah ada sebelumnya, bukan dari skrip ini.
-    echo   Masukkan password akun 'postgres' yang benar.
-    >>"%LOGFILE%" echo   [INFO] Password baku tidak cocok, minta manual.
-    set /p PG_PASSWORD="  Password akun database 'postgres': "
-    set "PGPASSWORD=!PG_PASSWORD!"
-  ) else (
-    echo   [OK] Password baku cocok, dipakai langsung.
-    >>"%LOGFILE%" echo   [OK] Password baku cocok.
-  )
-) else (
-  if not exist "installer\postgresql-16.15-4-windows-x64.exe" (
-    color 0C
-    echo.
-    echo  [GAGAL] PostgreSQL belum terpasang, dan
-    echo  installer\postgresql-16.15-4-windows-x64.exe tidak ditemukan.
-    echo  Pasang PostgreSQL 16 manual, atau lengkapi berkas installer-nya.
-    echo.
-    >>"%LOGFILE%" echo [GAGAL] PostgreSQL belum ada dan installer tidak ditemukan.
-    pause
-    exit /b 1
-  )
-
-  echo   Memasang PostgreSQL ^(beberapa menit, mohon tunggu^)...
-  >>"%LOGFILE%" echo   Memasang PostgreSQL...
-  "installer\postgresql-16.15-4-windows-x64.exe" --mode unattended --unattendedmodeui minimal --superpassword "%PG_PASSWORD%" --serverport 5432 --servicename postgresql-x64-16 --disable-components stackbuilder
-  if errorlevel 1 (
-    color 0C
-    echo.
-    echo  [GAGAL] Installer PostgreSQL keluar dengan kode error.
-    echo  Coba pasang manual: installer\postgresql-16.15-4-windows-x64.exe
-    echo.
-    >>"%LOGFILE%" echo [GAGAL] Installer PostgreSQL keluar dengan error.
-    pause
-    exit /b 1
-  )
-
-  set "PATH=%PATH%;%ProgramFiles%\PostgreSQL\16\bin"
-  echo   [OK] PostgreSQL terpasang.
-  >>"%LOGFILE%" echo   [OK] PostgreSQL terpasang.
+REM Selalu gunakan PostgreSQL Portable bawaan PresenSee (Port Khusus 5433)
+set "PG_ZIP="
+set "PG_ZIP_DIR="
+if exist "installer\postgresql-16.15-5-windows-x64-binaries.zip" (
+  set "PG_ZIP=postgresql-16.15-5-windows-x64-binaries.zip"
+  set "PG_ZIP_DIR=installer"
 )
-echo.
+if not defined PG_ZIP for /f "delims=" %%Z in ('dir /b "installer\postgresql-*-binaries.zip" 2^>nul') do if not defined PG_ZIP (
+  set "PG_ZIP=%%Z"
+  set "PG_ZIP_DIR=installer"
+)
+if not defined PG_ZIP for /f "delims=" %%Z in ('dir /b "..\installer\postgresql-*-binaries.zip" 2^>nul') do if not defined PG_ZIP (
+  set "PG_ZIP=%%Z"
+  set "PG_ZIP_DIR=..\installer"
+)
+if not defined PG_ZIP for /f "delims=" %%Z in ('dir /b "..\presensee_native\installer\postgresql-*-binaries.zip" 2^>nul') do if not defined PG_ZIP (
+  set "PG_ZIP=%%Z"
+  set "PG_ZIP_DIR=..\presensee_native\installer"
+)
 
-REM psql.exe path — sama seperti node.exe, dicari sungguhan.
-set "PSQL_EXE="
-for /f "delims=" %%P in ('where psql 2^>nul') do if not defined PSQL_EXE set "PSQL_EXE=%%P"
-if not defined PSQL_EXE if exist "%ProgramFiles%\PostgreSQL\16\bin\psql.exe" set "PSQL_EXE=%ProgramFiles%\PostgreSQL\16\bin\psql.exe"
+if not exist "pgsql\bin\postgres.exe" (
+  if exist "..\pgsql\bin\postgres.exe" (
+    echo   [INFO] Menyalin folder pgsql dari folder induk...
+    xcopy /e /i /y "..\pgsql" "pgsql" >nul 2>&1
+  ) else if exist "..\presensee_native\pgsql\bin\postgres.exe" (
+    echo   [INFO] Menyalin folder pgsql dari folder presensee_native...
+    xcopy /e /i /y "..\presensee_native\pgsql" "pgsql" >nul 2>&1
+  ) else if defined PG_ZIP (
+    echo   Mengekstrak PostgreSQL Portable dari !PG_ZIP_DIR!\!PG_ZIP!...
+    >>"%LOGFILE%" echo   Mengekstrak PostgreSQL Portable dari !PG_ZIP_DIR!\!PG_ZIP!...
+    where tar >nul 2>&1
+    if not errorlevel 1 (
+      tar -xf "!PG_ZIP_DIR!\!PG_ZIP!"
+    ) else (
+      powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -Path '!PG_ZIP_DIR!\!PG_ZIP!' -DestinationPath '.' -Force"
+    )
+  )
+)
+
+if exist "pgsql\bin\postgres.exe" (
+  echo   [OK] PostgreSQL Portable aktif di folder pgsql\ ^(Port Khusus 5433^).
+  >>"%LOGFILE%" echo   [OK] PostgreSQL Portable siap di pgsql\ port 5433.
+  set "PATH=%~dp0pgsql\bin;!PATH!"
+  set "PSQL_EXE=%~dp0pgsql\bin\psql.exe"
+  set "PG_PORT=5433"
+
+  rem Salin runtime DLL jika ada di pgAdmin python agar postgres.exe & initdb.exe tidak kekurangan runtime
+  if exist "%~dp0pgsql\pgAdmin 4\python\vcruntime140.dll" (
+    copy /y "%~dp0pgsql\pgAdmin 4\python\vcruntime*.dll" "%~dp0pgsql\bin\" >nul 2>&1
+  )
+
+  set "PG_DATA=%~dp0database\data"
+  if "!PG_DATA:~-1!"=="\" set "PG_DATA=!PG_DATA:~0,-1!"
+
+  rem Cek apakah PostgreSQL sudah aktif dan merespons pada port 5433
+  "!PSQL_EXE!" -h 127.0.0.1 -p 5433 -U postgres -d postgres -c "SELECT 1" >nul 2>&1
+  if not errorlevel 1 (
+    echo   [OK] Layanan PostgreSQL sudah aktif dan siap pada port 5433.
+    >>"%LOGFILE%" echo   [OK] PostgreSQL sudah aktif pada port 5433.
+    goto PG_SIAP
+  )
+
+  rem Bersihkan sisa proses zombie atau proses lain yang memegang port 5433
+  echo   Memeriksa ketersediaan port 5433 dan proses lama...
+  >>"%LOGFILE%" echo   Membersihkan port 5433...
+  for /f "tokens=5" %%p in ('netstat -ano 2^>nul ^| findstr /r ":5433 "') do (
+    if not "%%p"=="0" taskkill /f /pid %%p >nul 2>&1
+  )
+  tasklist /fi "imagename eq postgres.exe" 2>nul | findstr /i "postgres.exe" >nul
+  if errorlevel 1 (
+    if exist "!PG_DATA!\postmaster.pid" del /f /q "!PG_DATA!\postmaster.pid" >nul 2>&1
+  )
+  if exist "%~dp0database\postgres.log" del /f /q "%~dp0database\postgres.log" >nul 2>&1
+  timeout /t 1 /nobreak >nul
+
+  if not exist "!PG_DATA!\PG_VERSION" (
+    echo   Menginisialisasi kluster database PostgreSQL...
+    >>"%LOGFILE%" echo   Menjalankan initdb...
+    if exist "!PG_DATA!" rmdir /s /q "!PG_DATA!" >nul 2>&1
+    pushd "%~dp0pgsql\bin"
+    initdb.exe -D "!PG_DATA!" -U postgres -E UTF8 --locale=C -A trust
+    popd
+  )
+
+  rem Pastikan port 5433 dan listen_addresses di set di postgresql.conf
+  if exist "!PG_DATA!\postgresql.conf" (
+    findstr /c:"port = 5433" "!PG_DATA!\postgresql.conf" >nul 2>&1
+    if errorlevel 1 (
+      echo.>> "!PG_DATA!\postgresql.conf"
+      echo port = 5433>> "!PG_DATA!\postgresql.conf"
+    )
+    findstr /c:"listen_addresses = '*'" "!PG_DATA!\postgresql.conf" >nul 2>&1
+    if errorlevel 1 (
+      echo.>> "!PG_DATA!\postgresql.conf"
+      echo listen_addresses = '*'>> "!PG_DATA!\postgresql.conf"
+    )
+  )
+
+  rem Pastikan pg_hba.conf mengizinkan koneksi trust lokal
+  if exist "!PG_DATA!\pg_hba.conf" (
+    findstr /c:"127.0.0.1/32            trust" "!PG_DATA!\pg_hba.conf" >nul 2>&1
+    if errorlevel 1 (
+      echo host    all             all             127.0.0.1/32            trust> "!PG_DATA!\pg_hba.conf.tmp"
+      echo host    all             all             ::1/128                 trust>> "!PG_DATA!\pg_hba.conf.tmp"
+      echo host    all             all             all                     trust>> "!PG_DATA!\pg_hba.conf.tmp"
+      type "!PG_DATA!\pg_hba.conf" >> "!PG_DATA!\pg_hba.conf.tmp" 2>nul
+      move /y "!PG_DATA!\pg_hba.conf.tmp" "!PG_DATA!\pg_hba.conf" >nul 2>&1
+    )
+  )
+
+  echo   Mendaftarkan dan menyalakan layanan PresenSeePostgres pada port 5433...
+  >>"%LOGFILE%" echo   Mendaftarkan PresenSeePostgres port 5433...
+
+  set "NEED_REGISTER=1"
+  sc qc PresenSeePostgres 2>nul | findstr /i "pg_ctl.exe" >nul 2>&1
+  if not errorlevel 1 set "NEED_REGISTER=0"
+
+  if "!NEED_REGISTER!"=="1" (
+    net stop PresenSeePostgres >nul 2>&1
+    "%NSSM_EXE%" stop PresenSeePostgres >nul 2>&1
+    "%NSSM_EXE%" remove PresenSeePostgres confirm >nul 2>&1
+    pushd "%~dp0pgsql\bin"
+    pg_ctl.exe unregister -N PresenSeePostgres >nul 2>&1
+    pg_ctl.exe register -N PresenSeePostgres -D "!PG_DATA!" -S auto >nul 2>&1
+    popd
+  )
+
+  net start PresenSeePostgres >nul 2>&1
+
+  rem Cek apakah PostgreSQL sudah merespons koneksi di port 5433
+  echo   Menunggu database PostgreSQL siap menerima koneksi...
+  set "PG_READY=0"
+  for /l %%I in (1,1,20) do (
+    if "!PG_READY!"=="0" (
+      "!PSQL_EXE!" -h 127.0.0.1 -p 5433 -U postgres -d postgres -c "SELECT 1" >nul 2>&1
+      if not errorlevel 1 (
+        set "PG_READY=1"
+      ) else (
+        timeout /t 1 /nobreak >nul
+      )
+    )
+  )
+
+  if "!PG_READY!"=="1" (
+    echo   [OK] PostgreSQL aktif dan siap pada port 5433.
+    >>"%LOGFILE%" echo   [OK] PostgreSQL aktif pada port 5433.
+  ) else (
+    color 0C
+    echo  [GAGAL] PostgreSQL tidak merespons pada port 5433.
+    sc query PresenSeePostgres
+    if exist "!PG_DATA!\log" (
+      for /f "delims=" %%F in ('dir /b /o-d "!PG_DATA!\log\*.log" 2^>nul') do (
+        echo.
+        echo  --- PESAN DARI log\%%F ---
+        type "!PG_DATA!\log\%%F"
+        echo  --------------------------
+        goto PG_LOG_DONE
+      )
+    )
+    :PG_LOG_DONE
+    if exist "%~dp0database\postgres.log" (
+      echo.
+      echo  --- PESAN DARI database\postgres.log ---
+      type "%~dp0database\postgres.log"
+      echo  ----------------------------------------
+    )
+    >>"%LOGFILE%" echo [GAGAL] PostgreSQL tidak merespons pada port 5433.
+    pause
+    exit /b 1
+  )
+
+  goto PG_SIAP
+)
+
+color 0C
+echo.
+echo  ====================================================================
+echo  [GAGAL] PostgreSQL Portable tidak ditemukan di folder ini!
+echo  ====================================================================
+echo.
+echo  PENTING:
+echo  Berkas install.bat ini harus berada di dalam folder presensee_native
+echo  yang memiliki folder "installer" dan file "postgresql-*-binaries.zip".
+echo.
+echo  JIKA ANDA MENGEKSTRAK DARI presensee_patch.zip:
+echo  Pastikan isi patch ini DI-COPY / DITIMPA LANGSUNG ke dalam folder
+echo  presensee_native utama Anda (jangan dijalankan di folder terpisah)!
+echo.
+>>"%LOGFILE%" echo [GAGAL] pgsql\bin\postgres.exe atau zip portable tidak ditemukan.
+pause
+exit /b 1
+
+:PG_SIAP
 if not defined PSQL_EXE (
   color 0C
-  echo  [GAGAL] psql.exe tidak ditemukan setelah PostgreSQL terpasang.
+  echo  [GAGAL] psql.exe tidak ditemukan setelah PostgreSQL disiapkan.
   echo  Tutup jendela ini, buka lagi, jalankan install.bat sekali lagi.
   >>"%LOGFILE%" echo [GAGAL] psql.exe tidak ditemukan.
   pause
   exit /b 1
 )
->>"%LOGFILE%" echo   psql.exe: %PSQL_EXE%
+>>"%LOGFILE%" echo   psql.exe: %PSQL_EXE% ^(port !PG_PORT!^)
 
 REM =====================================================================
 REM [4/6] Database
@@ -246,30 +370,25 @@ echo [4/6] Menyiapkan database...
 >>"%LOGFILE%" echo [4/6] Menyiapkan database...
 set "PGPASSWORD=!PG_PASSWORD!"
 
-REM Ditandai pakai variabel + if/else, BUKAN goto yang melompat keluar
-REM blok tanda kurung — pelajaran yang sama seperti bagian NSSM di atas.
 set "DB_SUDAH_ADA=0"
-"%PSQL_EXE%" -h localhost -U postgres -tc "SELECT 1 FROM pg_database WHERE datname='absen'" > "%TEMP%\presensee-db-check.txt" 2>nul
+"%PSQL_EXE%" -h 127.0.0.1 -p !PG_PORT! -U postgres -d postgres -tc "SELECT 1 FROM pg_database WHERE datname='absen'" > "%TEMP%\presensee-db-check.txt" 2>nul
 findstr /c:"1" "%TEMP%\presensee-db-check.txt" >nul 2>&1
 if not errorlevel 1 set "DB_SUDAH_ADA=1"
 
 if "%DB_SUDAH_ADA%"=="1" (
-  echo   [OK] Database 'absen' sudah ada, skema tidak dijalankan ulang
-  echo   ^(supaya data yang sudah ada tidak tersentuh^).
+  echo   [OK] Database 'absen' sudah ada, skema tidak dijalankan ulang.
   >>"%LOGFILE%" echo   [OK] Database 'absen' sudah ada, dilewati.
 ) else (
-  "%PSQL_EXE%" -h localhost -U postgres -c "CREATE DATABASE absen" >nul
+  "%PSQL_EXE%" -h 127.0.0.1 -p !PG_PORT! -U postgres -d postgres -c "CREATE DATABASE absen" >nul
   if errorlevel 1 (
     color 0C
-    echo  [GAGAL] Tidak bisa membuat database. Periksa PostgreSQL sudah aktif.
-    echo  ^(Kalau baru saja masukkan password manual, kemungkinan passwordnya
-    echo  salah - jalankan install.bat lagi dan periksa lagi^).
-    >>"%LOGFILE%" echo [GAGAL] CREATE DATABASE gagal - kemungkinan password salah.
+    echo  [GAGAL] Tidak bisa membuat database. Periksa PostgreSQL sudah aktif pada port !PG_PORT!.
+    >>"%LOGFILE%" echo [GAGAL] CREATE DATABASE gagal.
     pause
     exit /b 1
   )
 
-  "%PSQL_EXE%" -h localhost -U postgres -d absen -v ON_ERROR_STOP=1 -f "database\schema.sql"
+  "%PSQL_EXE%" -h 127.0.0.1 -p !PG_PORT! -U postgres -d absen -v ON_ERROR_STOP=1 -f "database\schema.sql"
   if errorlevel 1 (
     color 0C
     echo  [GAGAL] Gagal memasang skema database.
@@ -280,21 +399,20 @@ if "%DB_SUDAH_ADA%"=="1" (
 
   echo.
   echo   ------------------------------------------------------------------
-  echo   Mau masukkan DATA CONTOH ^(beberapa kelas dan siswa contoh, berguna
-  echo   untuk uji coba^)? Jawab N kalau ini pemasangan SUNGGUHAN dan mau
-  echo   mulai dari kosong ^(tambah kelas/siswa asli sendiri nanti^).
+  echo   Mau masukkan DATA CONTOH ^(beberapa kelas dan siswa contoh^)?
+  echo   Jawab Y untuk coba-coba, jawab N untuk mulai dari data kosong.
   echo   ------------------------------------------------------------------
   >>"%LOGFILE%" echo   [TANYA] Masukkan data contoh? (Y/N)
   set /p ISI_CONTOH="  Masukkan data contoh? (Y/N): "
   >>"%LOGFILE%" echo   [JAWAB] !ISI_CONTOH!
   if /I "!ISI_CONTOH!"=="Y" (
-    "%PSQL_EXE%" -h localhost -U postgres -d absen -v ON_ERROR_STOP=1 -f "database\seed.sql"
-    "%PSQL_EXE%" -h localhost -U postgres -d absen -v ON_ERROR_STOP=1 -f "database\contoh-multi-kelas.sql"
+    "%PSQL_EXE%" -h 127.0.0.1 -p !PG_PORT! -U postgres -d absen -v ON_ERROR_STOP=1 -f "database\seed.sql"
+    "%PSQL_EXE%" -h 127.0.0.1 -p !PG_PORT! -U postgres -d absen -v ON_ERROR_STOP=1 -f "database\contoh-multi-kelas.sql"
     echo   [OK] Data contoh dimasukkan.
     >>"%LOGFILE%" echo   [OK] Data contoh dimasukkan.
   ) else (
-    "%PSQL_EXE%" -h localhost -U postgres -d absen -v ON_ERROR_STOP=1 -f "database\seed-esensial.sql"
-    echo   [OK] Cuma akun login ^& setelan bawaan yang dimasukkan.
+    "%PSQL_EXE%" -h 127.0.0.1 -p !PG_PORT! -U postgres -d absen -v ON_ERROR_STOP=1 -f "database\seed-esensial.sql"
+    echo   [OK] Cuma data esensial yang dimasukkan.
     >>"%LOGFILE%" echo   [OK] Cuma data esensial yang dimasukkan.
   )
   echo   [OK] Database siap.
@@ -302,11 +420,19 @@ if "%DB_SUDAH_ADA%"=="1" (
 )
 echo.
 
-REM Password disimpan untuk dipakai konfigurasi service di bawah, dan
-REM ditulis ke config.env supaya jalankan.bat/install ulang bisa membacanya
-REM tanpa perlu password diketik ulang tiap kali.
+REM Konfigurasi lengkap ditulis ke config.env (Port Khusus: BE 5050, FE 3050, DB !PG_PORT!)
 > "config.env" (
-  echo DATABASE_URL=postgresql://postgres:!PG_PASSWORD!@localhost:5432/absen
+  echo NODE_ENV=production
+  echo PORT=5050
+  echo TZ=Asia/Jakarta
+  echo DATABASE_URL=postgresql://postgres:!PG_PASSWORD!@localhost:!PG_PORT!/absen
+  echo JWT_SECRET=super-secret-jwt-key-replace-in-production-min-32-chars
+  echo SCANNER_API_KEY=presensee-scanner-api-key-2026
+  echo WA_PROVIDER=baileys
+  echo WA_SESSION_PATH=./storage/wa-session
+  echo WA_ALLOWLIST=*
+  echo STORAGE_PATH=./storage
+  echo CORS_ORIGINS=http://localhost:3050,http://127.0.0.1:3050
 )
 >>"%LOGFILE%" echo   config.env ditulis ulang.
 
@@ -325,18 +451,17 @@ REM baris sesudahnya. Inilah sebab jendela tertutup sendiri tanpa pesan
 REM tepat setelah tulisan langkah [5/6] muncul — ditemukan dari client
 REM sungguhan (BE-113).
 pushd "shared"
-if not exist "node_modules" call "%NPM_CMD%" install --omit=dev --no-audit --no-fund
+if not exist "node_modules\zod" (
+  if exist "..\apps\api\node_modules\zod" (
+    echo   Menyalin dependensi zod ke shared...
+    xcopy /e /i /y "..\apps\api\node_modules\zod" "node_modules\zod\" >nul 2>&1
+  )
+)
 popd
 
 pushd "apps\api"
 REM npm install di Windows kadang gagal EPERM sesaat (rmdir/symlink) kalau
-REM antivirus real-time sedang memindai berkas yang baru saja ditulis npm —
-REM npm sendiri mencurigai ini di pesan errornya ("possibly in use by a text
-REM editor or antivirus"). Ini TERBUKTI terjadi dua kali di client sungguhan
-REM meski folder-nya sudah bersih diekstrak ulang, jadi bukan cuma sisa
-REM percobaan lama (BE-114) — melainkan gangguan sesaat yang hilang sendiri
-REM kalau dicoba ulang. Diberi 3x percobaan, folder node_modules dihapus
-REM total di antara percobaan supaya tiap percobaan mulai bersih (BE-116).
+REM antivirus real-time sedang memindai berkas yang baru saja ditulis npm
 if not exist "node_modules" (
   set "NPM_OK=0"
   for /l %%T in (1,1,3) do (
@@ -362,17 +487,33 @@ if not exist "node_modules" (
   )
 )
 copy /y "..\..\config.env" ".env" >nul
+
+rem Pastikan zod juga disalin ke shared jika belum ada
+if not exist "..\..\shared\node_modules\zod" (
+  if exist "node_modules\zod" (
+    xcopy /e /i /y "node_modules\zod" "..\..\shared\node_modules\zod\" >nul 2>&1
+  )
+)
 popd
 
-REM apps\web TIDAK butuh npm install — hasil build "standalone" Next.js
-REM sudah membawa node_modules-nya sendiri (dibundel otomatis saat build).
+rem Siapkan file konfigurasi environment untuk Web
+> "apps\web\.env" (
+  echo PORT=3050
+  echo HOSTNAME=0.0.0.0
+)
+if exist "apps\web\apps\web" (
+  > "apps\web\apps\web\.env" (
+    echo PORT=3050
+    echo HOSTNAME=0.0.0.0
+  )
+)
 
 echo   Mendaftarkan layanan presensee-api...
 >>"%LOGFILE%" echo   Mendaftarkan layanan PresenSeeApi...
 "%NSSM_EXE%" stop PresenSeeApi >nul 2>&1
 "%NSSM_EXE%" remove PresenSeeApi confirm >nul 2>&1
 "%NSSM_EXE%" install PresenSeeApi "%NODE_EXE%" "--env-file=.env dist\server.js"
-"%NSSM_EXE%" set PresenSeeApi AppDirectory "%~dp0apps\api."
+"%NSSM_EXE%" set PresenSeeApi AppDirectory "%~dp0apps\api"
 "%NSSM_EXE%" set PresenSeeApi DisplayName "PresenSee API"
 "%NSSM_EXE%" set PresenSeeApi Description "Server API PresenSee (presensi, WhatsApp, laporan)"
 "%NSSM_EXE%" set PresenSeeApi Start SERVICE_AUTO_START
@@ -389,10 +530,10 @@ echo   Mendaftarkan layanan presensee-web...
 "%NSSM_EXE%" stop PresenSeeWeb >nul 2>&1
 "%NSSM_EXE%" remove PresenSeeWeb confirm >nul 2>&1
 "%NSSM_EXE%" install PresenSeeWeb "%NODE_EXE%" "apps\web\server.js"
-"%NSSM_EXE%" set PresenSeeWeb AppDirectory "%~dp0apps\web."
+"%NSSM_EXE%" set PresenSeeWeb AppDirectory "%~dp0apps\web"
 "%NSSM_EXE%" set PresenSeeWeb DisplayName "PresenSee Web"
 "%NSSM_EXE%" set PresenSeeWeb Description "Aplikasi web PresenSee"
-"%NSSM_EXE%" set PresenSeeWeb AppEnvironmentExtra "PORT=3000" "HOSTNAME=0.0.0.0"
+"%NSSM_EXE%" set PresenSeeWeb AppEnvironmentExtra "PORT=3050"
 "%NSSM_EXE%" set PresenSeeWeb Start SERVICE_AUTO_START
 "%NSSM_EXE%" set PresenSeeWeb AppExit Default Restart
 "%NSSM_EXE%" set PresenSeeWeb AppRestartDelay 5000
@@ -405,9 +546,7 @@ if not exist "apps\web\log" mkdir "apps\web\log"
 echo   Menjalankan layanan...
 "%NSSM_EXE%" start PresenSeeApi
 "%NSSM_EXE%" start PresenSeeWeb
-REM Beri jeda supaya proses yang crash-loop sempat ketahuan sebelum dicek —
-REM "start" nssm langsung kembali begitu proses dimulai, tidak menunggu
-REM apakah prosesnya benar-benar tetap hidup (BE-114).
+REM Beri jeda supaya proses yang crash-loop sempat ketahuan sebelum dicek
 timeout /t 3 /nobreak >nul
 
 REM Konfirmasi sungguhan, bukan cuma anggap berhasil karena tidak ada error.
@@ -431,37 +570,45 @@ if "%STATUS_OK%"=="1" (
 )
 echo.
 
-REM =====================================================================
-REM [6/6] Scanner Agent (opsional, PC ini juga dipakai baca scanner USB)
-REM =====================================================================
-echo [6/6] Scanner Agent ^(pembaca scanner USB gerbang^)
-echo   ------------------------------------------------------------------
-echo   Apakah PC ini JUGA dipakai untuk membaca scanner USB gerbang?
-echo   Jawab N kalau scanner-nya ada di PC lain, atau belum ada scanner.
-echo   ------------------------------------------------------------------
->>"%LOGFILE%" echo [6/6] [TANYA] Pasang Scanner Agent di PC ini? (Y/N)
-set /p PASANG_AGENT="  Pasang Scanner Agent di PC ini? (Y/N): "
->>"%LOGFILE%" echo   [JAWAB] %PASANG_AGENT%
-if /I "!PASANG_AGENT!"=="Y" (
-  if exist "apps\scanner-agent\config.json" (
-    echo   config.json sudah ada, dilewati.
-  ) else if exist "apps\scanner-agent\config.example.json" (
-    copy "apps\scanner-agent\config.example.json" "apps\scanner-agent\config.json" >nul
-    echo   config.json dibuat dari contoh - apiUrl sudah benar untuk PC ini
-    echo   ^(http://localhost:5000^), apiKey ikut ter-copy juga.
+REM Mendaftarkan tugas Auto-Backup database setiap pukul 09:00 pagi (dengan rotasi 7 hari)
+if exist "%~dp0BACKUP-DATABASE.bat" (
+  echo   Mendaftarkan jadwal Auto-Backup database harian ^(setiap pukul 09:00^)...
+  >>"%LOGFILE%" echo   Mendaftarkan jadwal Task Scheduler PresenSeeAutoBackup...
+  schtasks /create /tn "PresenSeeAutoBackup" /tr "\"%~dp0BACKUP-DATABASE.bat\"" /sc daily /st 09:00 /ru "SYSTEM" /f >nul 2>&1
+  if not errorlevel 1 (
+    echo   [OK] Jadwal Auto-Backup pukul 09:00 terdaftar.
+    >>"%LOGFILE%" echo   [OK] Task Scheduler PresenSeeAutoBackup berhasil dibuat.
   )
-  echo   Menjalankan install-service.bat Scanner Agent...
-  >>"%LOGFILE%" echo   Menjalankan install-service.bat Scanner Agent...
-  call "apps\scanner-agent\install-service.bat"
-) else (
-  echo   Dilewati.
-  >>"%LOGFILE%" echo   Scanner Agent dilewati.
+)
+
+REM =====================================================================
+REM [6/6] Scanner Agent (Pembaca scanner USB / Barcode)
+REM =====================================================================
+echo.
+echo [6/6] Menyiapkan Scanner Agent...
+>>"%LOGFILE%" echo [6/6] Menyiapkan Scanner Agent...
+
+set "AGENT_DIR=%~dp0apps\scanner-agent"
+if exist "%AGENT_DIR%\RakitAplikasi.bat" (
+  echo   [INFO] Merakit Scanner Agent C# All-in-One...
+  >>"%LOGFILE%" echo   Merakit AgenScanner.exe...
+  call "%AGENT_DIR%\RakitAplikasi.bat" >nul 2>&1
+  if exist "%AGENT_DIR%\AgenScanner.exe" (
+    reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v "PresenSeeScanner" /t REG_SZ /d "\"%AGENT_DIR%\AgenScanner.exe\"" /f >nul 2>&1
+    taskkill /f /im AgenScanner.exe >nul 2>&1
+    start "" "%AGENT_DIR%\AgenScanner.exe"
+    echo   [OK] Scanner Agent All-in-One aktif di background!
+    >>"%LOGFILE%" echo   [OK] Scanner Agent All-in-One aktif.
+  ) else (
+    echo   [INFO] Kompilasi Scanner Agent dilewati/gagal.
+    >>"%LOGFILE%" echo   [INFO] Kompilasi Scanner Agent gagal.
+  )
 )
 echo.
 
 echo ====================================================================
 echo   [SELESAI] PresenSee terpasang.
-echo   Buka http://localhost:3000 di browser ^(atau jalankan jalankan.bat^).
+echo   Buka http://localhost:3050 di browser ^(atau jalankan jalankan.bat^).
 echo   Login: superadmin / siklon123 ^(wajib ganti password saat masuk^).
 echo   Catatan lengkap proses ini ada di install-log.txt.
 echo ====================================================================

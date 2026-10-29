@@ -1,8 +1,7 @@
-import type { KejadianWa } from '@siklon/shared';
+import { DEFAULT_TEMPLATE_WA, type KejadianWa, NAMA_HARI } from '@siklon/shared';
 import { logger } from '../../config/logger.js';
-import { NAMA_HARI } from '@siklon/shared';
 import { ambil as ambilSetting } from '../settings/settings.service.js';
-import { hariLokal, jamLokal } from '../../lib/waktu.js';
+import { hariLokal, jamLokal, jamDetikLokal } from '../../lib/waktu.js';
 
 export type Variabel = Record<string, string | number>;
 
@@ -25,7 +24,25 @@ export function tanggalPanjang(d: Date): string {
 }
 
 /**
- * Ganti {placeholder} dengan nilainya.
+ * Urai format Spintax {opsi1|opsi2|opsi3}.
+ * Memilih salah satu opsi secara acak untuk memvariasikan isi pesan,
+ * sehingga pola teks ratusan pesan tidak terbaca identik oleh sistem anti-spam Meta.
+ */
+export function uraiSpintax(teks: string): string {
+  let hasil = teks;
+  const pola = /\{([^{}]+?\|[^{}]+?)\}/g;
+  while (pola.test(hasil)) {
+    hasil = hasil.replace(pola, (_, opsi: string) => {
+      const pilihan = opsi.split('|');
+      const terpilih = pilihan[Math.floor(Math.random() * pilihan.length)];
+      return (terpilih ?? '').trim();
+    });
+  }
+  return hasil;
+}
+
+/**
+ * Ganti {placeholder} dengan nilainya dan urai spintax.
  *
  * Placeholder yang tidak dikenal DIBIARKAN apa adanya, bukan dikosongkan.
  * Alasannya: kalau admin salah menulis {nama_siswa} padahal variabelnya {siswa},
@@ -34,9 +51,13 @@ export function tanggalPanjang(d: Date): string {
  * dan sekaligus tercatat sebagai peringatan di log.
  */
 export function render(template: string, vars: Variabel): string {
+  // 1. Eksekusi variasi Spintax terlebih dahulu
+  const templateBervariasi = uraiSpintax(template);
+
   const tidakDikenal: string[] = [];
 
-  const hasil = template.replace(/\{(\w+)\}/g, (utuh, kunci: string) => {
+  // 2. Ganti variabel {kunci}
+  const hasil = templateBervariasi.replace(/\{(\w+)\}/g, (utuh, kunci: string) => {
     if (kunci in vars) return String(vars[kunci]);
     tidakDikenal.push(kunci);
     return utuh;
@@ -57,6 +78,7 @@ export type KonteksPesan = {
   kelas: string | null;
   waktu: Date;
   menitTerlambat?: number;
+  catatan?: string | null;
   /** Dipakai template REKAP. */
   rekap?: {
     bulan: string;
@@ -76,7 +98,7 @@ export async function susunPesan(k: KonteksPesan): Promise<string> {
     ambilSetting('sekolah'),
   ]);
 
-  const template = templates[k.kejadian];
+  const template = templates[k.kejadian] ?? DEFAULT_TEMPLATE_WA[k.kejadian];
   if (!template) {
     throw new Error(`Template WhatsApp untuk kejadian "${k.kejadian}" belum ada di Pengaturan`);
   }
@@ -87,11 +109,22 @@ export async function susunPesan(k: KonteksPesan): Promise<string> {
     tanggal: tanggalPanjang(k.waktu),
     jam: jamLokal(k.waktu),
     menit: k.menitTerlambat ?? 0,
+    catatan: k.catatan || '-',
     sekolah: sekolah.nama,
     ...(k.rekap ?? {}),
   };
 
-  return render(template, vars);
+  const pesanTersusun = render(template, vars);
+
+  // Penanda unik otomatis (Ref Hash & Detik Scan)
+  // Menjamin string pesan selalu memiliki checksum/hash yang 100% berbeda di radar Meta.
+  if (!pesanTersusun.includes('Ref #') && !pesanTersusun.includes('ID #')) {
+    const ref = Math.random().toString(36).substring(2, 6).toUpperCase();
+    const detik = jamDetikLokal(k.waktu);
+    return `${pesanTersusun}\n\n_Ref: #${ref} • ${detik} WIB_`;
+  }
+
+  return pesanTersusun;
 }
 
 /** Pratinjau tanpa menyimpan apa pun — dipakai halaman editor template. */
@@ -102,6 +135,7 @@ export async function pratinjau(kejadian: KejadianWa): Promise<string> {
     kelas: 'VII-A',
     waktu: new Date(),
     menitTerlambat: 12,
+    catatan: 'Surat dokter',
     rekap: { bulan: 'September 2026', hadir: 18, terlambat: 2, izin: 1, sakit: 0, alpa: 1, persen: 90.9 },
   });
 }

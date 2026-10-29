@@ -12,8 +12,10 @@ echo Sedang menghentikan service container PresenSee...
 echo.
 
 
-echo Menghentikan Scanner Agent Raw (Khusus Keyboard)...
+echo Menghentikan Scanner Agent All-in-One...
+taskkill /F /IM AgenScanner.exe >nul 2>&1
 taskkill /F /IM AgenScannerRaw.exe >nul 2>&1
+taskkill /F /IM AgenScannerCom.exe >nul 2>&1
 
 echo.
 docker compose down

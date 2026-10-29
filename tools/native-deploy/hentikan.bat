@@ -26,12 +26,22 @@ echo  Menghentikan layanan Web...
 echo  Menghentikan layanan API...
 "%NSSM_EXE%" stop PresenSeeApi >nul 2>&1
 
-echo.
-echo  ------------------------------------------------------------------
-echo  PostgreSQL dibiarkan tetap menyala (dipakai layanan lain juga bisa
-echo  saja). Kalau memang mau ikut dimatikan, jalankan sendiri:
-echo    net stop postgresql-x64-16
-echo  ------------------------------------------------------------------
+echo  Menghentikan Scanner Agent C# All-in-One...
+taskkill /f /im AgenScanner.exe >nul 2>&1
+taskkill /f /im AgenScannerRaw.exe >nul 2>&1
+taskkill /f /im AgenScannerCom.exe >nul 2>&1
+
+sc query PresenSeePostgres >nul 2>&1
+if not errorlevel 1 (
+  echo  Menghentikan layanan PostgreSQL Portable...
+  net stop PresenSeePostgres >nul 2>&1
+)
+if exist "%~dp0pgsql\bin\pg_ctl.exe" (
+  pushd "%~dp0pgsql\bin"
+  pg_ctl.exe stop -D "%~dp0database\data" -m fast >nul 2>&1
+  popd
+)
+
 echo.
 echo ====================================================================
 echo   [OK] PresenSee dihentikan.

@@ -5,7 +5,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import {
   CameraIcon,
-  CameraOffIcon,
   HandIcon,
   MaximizeIcon,
   MinimizeIcon,
@@ -473,24 +472,7 @@ export default function HalamanKonsolScan() {
         </div>
       </div>
 
-      {/*
-        Peringatan ini menggantikan kartu "Perangkat scan" yang dulu ada di
-        sini: tanpa video di layar, keadaan "tidak ada yang bisa memindai"
-        tidak terlihat sama sekali.
-      */}
-      {scanner.data && !scanner.data.agent.online && idsKamera.length === 0 && (
-        <div className="flex items-start gap-2 rounded-xl border border-alpa/30 bg-alpa-bg p-3 text-[12.5px] leading-relaxed text-alpa">
-          <CameraOffIcon className="mt-px size-4 shrink-0" />
-          <span>
-            Scanner Agent offline dan kamera perangkat ini mati — tidak ada scan yang bisa masuk
-            ke layar ini.{' '}
-            <Link href="/scanner" className="font-semibold underline">
-              Atur perangkat scan
-            </Link>
-            .
-          </span>
-        </div>
-      )}
+
 
       {/*
         Video tidak ditampilkan di layar ini, tapi dua halangan yang butuh

@@ -60,6 +60,7 @@ export function DialogUbahStatus({
   const hapusLampiran = useHapusLampiranPresensi();
   const [status, setStatus] = useState<StatusPresensi>('IZIN');
   const [catatan, setCatatan] = useState('');
+  const [kirimWa, setKirimWa] = useState(false);
   /** Berkas yang baru dipilih tapi belum diunggah — diunggah setelah status tersimpan. */
   const [berkasBaru, setBerkasBaru] = useState<File | null>(null);
   const [pratinjauBaru, setPratinjauBaru] = useState<string | null>(null);
@@ -74,6 +75,7 @@ export function DialogUbahStatus({
     setBerkasBaru(null);
     setPratinjauBaru(null);
     setPunyaLampiranLama(baris.punyaLampiran);
+    setKirimWa(false);
   }, [baris]);
 
   // Pratinjau berkas baru pakai object URL — harus dilepas lagi supaya tidak bocor memori.
@@ -104,12 +106,13 @@ export function DialogUbahStatus({
     const opsi = {
       onSuccess: (hasil: { id: string }) => {
         const presensiId = baris.presensiId ?? hasil.id;
+        const notifWa = kirimWa ? ' (notifikasi WA diantrekan)' : '';
         if (berkasBaru && presensiId) {
           unggahLampiran.mutate(
             { presensiId, berkas: berkasBaru },
             {
               onSuccess: () => {
-                toastSukses(`${baris.nama} sekarang ${status}`);
+                toastSukses(`${baris.nama} sekarang ${status}${notifWa}`);
                 onTutup();
               },
               onError: (e: unknown) =>
@@ -117,7 +120,7 @@ export function DialogUbahStatus({
             },
           );
         } else {
-          toastSukses(`${baris.nama} sekarang ${status}`);
+          toastSukses(`${baris.nama} sekarang ${status}${notifWa}`);
           onTutup();
         }
       },
@@ -125,7 +128,7 @@ export function DialogUbahStatus({
     };
 
     if (baris.presensiId) {
-      ubah.mutate({ presensiId: baris.presensiId, status, catatan: catatan.trim() }, opsi);
+      ubah.mutate({ presensiId: baris.presensiId, status, catatan: catatan.trim(), kirimWa }, opsi);
     } else {
       tandai.mutate(
         {
@@ -133,6 +136,7 @@ export function DialogUbahStatus({
           tanggal,
           status: status as 'IZIN' | 'SAKIT' | 'ALPA',
           catatan: catatan.trim(),
+          kirimWa,
         },
         opsi,
       );
@@ -291,6 +295,48 @@ export function DialogUbahStatus({
                 )}
               </div>
             )}
+
+            {/* Opsi Kirim WhatsApp ke Wali Murid */}
+            <div className="rounded-lg border border-border bg-surface-1/50 p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-xs font-semibold text-foreground">
+                    Kirim notifikasi WhatsApp ke wali murid?
+                  </Label>
+                  <p className="text-[11.5px] text-muted-foreground">
+                    Pemberitahuan perubahan status ke <span className="font-semibold text-foreground">{status}</span> akan dikirim ke nomor wali murid.
+                  </p>
+                </div>
+                {baris.notifikasiAktif === false && (
+                  <span className="text-[11px] text-amber-600 dark:text-amber-400 font-medium bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-800">
+                    Wali menonaktifkan WA
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-5 pt-0.5">
+                <label className="flex items-center gap-2 text-xs font-medium cursor-pointer">
+                  <input
+                    type="radio"
+                    name="kirimWa"
+                    checked={!kirimWa}
+                    onChange={() => setKirimWa(false)}
+                    className="h-4 w-4 text-primary focus:ring-primary"
+                  />
+                  <span>Tidak (Default)</span>
+                </label>
+                <label className="flex items-center gap-2 text-xs font-medium cursor-pointer">
+                  <input
+                    type="radio"
+                    name="kirimWa"
+                    checked={kirimWa}
+                    onChange={() => setKirimWa(true)}
+                    className="h-4 w-4 text-primary focus:ring-primary"
+                  />
+                  <span>Ya, kirim WhatsApp</span>
+                </label>
+              </div>
+            </div>
 
             {error !== null && (
               <p className="rounded-lg bg-alpa-bg px-3.5 py-2.5 text-[12.5px] font-medium text-alpa">

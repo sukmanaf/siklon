@@ -24,7 +24,11 @@ export function buatApp() {
     typeof nilai === 'bigint' ? nilai.toString() : nilai,
   );
 
-  app.use(helmet());
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+    }),
+  );
   app.use(
     cors({
       origin: (origin, cb) => {

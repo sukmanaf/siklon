@@ -172,6 +172,17 @@ waRouter.post(
 );
 
 waRouter.post(
+  '/messages/cancel-queued',
+  ah(async (_req, res) => {
+    const { count } = await prisma.wa_messages.updateMany({
+      where: { status: 'QUEUED' },
+      data: { status: 'CANCELLED', last_error: 'Dibatalkan oleh admin' },
+    });
+    return kirim(res, { pesan: `${count} pesan antrean berhasil dibatalkan`, jumlah: count });
+  }),
+);
+
+waRouter.post(
   '/messages/retry-failed',
   ah(async (_req, res) => {
     // Pesan yang dibatalkan karena opt-out TIDAK ikut dicoba lagi — wali murid

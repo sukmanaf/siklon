@@ -8,6 +8,7 @@ import { hentikanDispatcher, mulaiDispatcher } from './modules/whatsapp/dispatch
 import { ambilProvider, sambungkanUlangBilaPerlu } from './modules/whatsapp/pengirim.js';
 import { tanganiPesanMasuk } from './modules/whatsapp/optout.service.js';
 import { hentikanPenjadwalBackup, mulaiPenjadwalBackup } from './modules/backup/backup.service.js';
+import { hentikanPenjadwalAlpa, mulaiPenjadwalAlpa } from './modules/presensi/alpa.service.js';
 
 async function main() {
   // Gagal keras di awal lebih baik daripada menerima permintaan tanpa database.
@@ -30,6 +31,7 @@ async function main() {
   mulaiDispatcher();
   void sambungkanUlangBilaPerlu();
   mulaiPenjadwalBackup();
+  mulaiPenjadwalAlpa();
 
   server.listen(env.PORT, () => {
     logger.info(`SIKLON API siap di http://localhost:${env.PORT}/api/v1  [${env.NODE_ENV}]`);
@@ -39,6 +41,7 @@ async function main() {
     logger.info(`${sinyal} diterima, menutup server...`);
     hentikanDispatcher();
     hentikanPenjadwalBackup();
+    hentikanPenjadwalAlpa();
     server.close(async () => {
       await tutupDb();
       logger.info('Server ditutup dengan bersih.');

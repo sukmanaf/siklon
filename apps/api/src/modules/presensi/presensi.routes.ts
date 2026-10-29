@@ -16,6 +16,7 @@ import { siarkanIdentify, siarkanScan } from '../../realtime/socket.js';
 import { prosesScan } from './scan.service.js';
 import * as presensi from './presensi.service.js';
 import * as scanner from './scanner.service.js';
+import { jalankanAutoAlpa } from './alpa.service.js';
 import { tanggalLokal } from '../../lib/waktu.js';
 
 const tgl = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format tanggal harus YYYY-MM-DD');
@@ -205,6 +206,7 @@ presensiRouter.post(
         catatan: z.string().trim().min(1, 'Catatan wajib diisi saat mengubah status'),
         jamMasuk: z.string().optional(),
         jamPulang: z.string().optional(),
+        kirimWa: z.boolean().optional().default(false),
       })
       .parse(req.body);
     const result = await presensi.ubahStatus(id, data, req.user!.id);
@@ -223,12 +225,27 @@ presensiRouter.post(
         catatan: z.string().trim().min(1, 'Catatan wajib diisi'),
         jamMasuk: z.string().optional(),
         jamPulang: z.string().optional(),
+        kirimWa: z.boolean().optional().default(false),
       })
       .parse(req.body);
     return kirim(
       res,
       await presensi.tandaiTanpaScan(data.siswaId, data.tanggal, data, req.user!.id),
     );
+  }),
+);
+
+presensiRouter.post(
+  '/auto-alpa',
+  ah(async (req, res) => {
+    const data = z
+      .object({
+        tanggal: tgl.optional(),
+        paksa: z.boolean().optional().default(false),
+      })
+      .parse(req.body ?? {});
+    const hasil = await jalankanAutoAlpa(data);
+    return kirim(res, hasil);
   }),
 );
 

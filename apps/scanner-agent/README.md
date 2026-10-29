@@ -1,106 +1,67 @@
-# PresenSee Scanner Agent
+# Agen Scanner Presensi All-in-One (C# Native)
 
-Berjalan di **PC gerbang sekolah**. Membaca scanner barcode lewat port serial dan
-mengirim hasilnya ke server PresenSee.
+Aplikasi desktop tunggal dan ringan untuk menghubungkan scanner barcode/kartu fisik (pos satpam / gerbang sekolah) ke server PresenSee (Siklon).
 
-## Yang perlu disiapkan lebih dulu
+## Keunggulan Utama:
+1. **Berjalan di Latar Belakang (Silent Mode)**:
+   - Secara default, aplikasi berjalan senyap di background tanpa menampilkan jendela hitam CMD terus-menerus.
+   - Layar PC satpam tetap bersih dan leluasa digunakan untuk aktivitas lain.
+2. **Mode Debugging Live Kapan Saja**:
+   - Jika ingin memantau scanner atau mencari penyebab error, cukup ubah `"showConsole": true` di `config.json`. Jendela terminal hitam akan muncul lengkap dengan log warna-warni secara langsung.
+3. **Pencatatan Log Otomatis**:
+   - Meskipun jendela terminal tertutup, riwayat scan dan pesan kendala tetap dicatat di berkas `scanner.log`.
+4. **Satu Aplikasi untuk Semua Scanner**:
+   - Mendukung **USB Keyboard Wedge / Barcode Scanner biasa** (Raw Input background listener).
+   - Mendukung **Serial / USB Virtual COM Port** dengan auto-detect & hotplug.
+5. **Zero Runtime / Zero Dependency**:
+   - Tidak memerlukan instalasi Node.js, Python, ataupun runtime tambahan.
+   - Menggunakan compiler .NET bawaan Windows (`%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe`).
+   - Berjalan langsung di Windows 7 / 8 / 10 / 11.
+6. **Anti-Dobel Agen**:
+   - Dilengkapi proteksi System Mutex agar agen tidak bisa dibuka dua kali secara bersamaan.
 
-1. **Scanner harus dalam mode USB Virtual COM Port**, bukan mode keyboard.
-   Ubah dengan memindai barcode setup dari buku manual scanner. Kalau masih mode
-   keyboard, ia hanya "mengetik" ke jendela yang sedang aktif dan agent ini tidak
-   bisa membacanya sama sekali.
-2. **Node.js 22 atau lebih baru** (antrean offline memakai `node:sqlite` bawaan Node).
-3. **Kunci API** dari halaman Scanner pada aplikasi.
+---
 
-## Pemasangan
+## Konfigurasi (`config.json`)
 
-```bash
-# 1. Salin folder ini ke PC gerbang, lalu:
-npm install --omit=dev
-npm run build
-
-# 2. Buat config.json
-cp config.example.json config.json
-#    isi apiUrl dan apiKey
-
-# 3. Periksa scanner terbaca
-npm run ports
-```
-
-`npm run ports` adalah langkah diagnosa terpenting. Kalau hasilnya kosong,
-scanner masih dalam mode keyboard — perbaiki itu dulu sebelum lanjut.
-
-### Windows
-
-```
-install-service.bat        (klik kanan > Run as administrator)
-```
-
-Membutuhkan [nssm](https://nssm.cc/download). Layanan hidup otomatis setiap PC
-dinyalakan dan dijalankan ulang sendiri bila mati.
-
-### Linux
-
-```bash
-sudo cp -r . /opt/presensee-agent
-sudo useradd -r -s /bin/false presensee
-sudo usermod -aG dialout presensee        # WAJIB: tanpa ini port serial tidak bisa dibuka
-sudo cp presensee-scanner-agent.service /etc/systemd/system/
-sudo systemctl enable --now presensee-scanner-agent
-```
-
-## Isi config.json
-
-```jsonc
+```json
 {
-  "apiUrl": "https://presensi.sekolahku.sch.id",
-  "apiKey": "dari halaman Scanner",
-
-  // opsional
-  "antreanPath": "./antrean.sqlite",
-  "portTambahan": [],        // path port yang tidak terdeteksi otomatis
-  "laporDetik": 60,
-  "kirimUlangDetik": 15,
-  "logLevel": "info"         // debug | info | warn | error
+  "apiUrl": "http://localhost:5050/api/v1",
+  "apiKey": "presensee-scanner-api-key-2026",
+  "gate": "GERBANG_UTAMA",
+  "mode": "AUTO",
+  "showConsole": false,
+  "port": "AUTO",
+  "baudRate": 9600,
+  "debounceSeconds": 3
 }
 ```
 
-**Daftar scanner tidak ada di sini.** Nomor COM di Windows bisa berubah sendiri
-saat colokan USB dipindah, dan tidak ada yang tahu scanner fisik mana yang jadi
-COM3 tanpa mencoba. Karena itu penamaan scanner dilakukan dari halaman **Scanner**
-di aplikasi: tekan **Kenali Scanner**, tempelkan barcode di scanner yang ingin
-dinamai, lalu beri kode gerbangnya. Agent menerapkannya **tanpa perlu restart**.
+### Keterangan Opsi:
+* `showConsole`:
+  * `false` *(Default)*: Agen berjalan di **latar belakang** (CMD hanya muncul 2 detik lalu otomatis tertutup).
+  * `true`: Agen berjalan dengan **jendela konsol hitam terbuka terus** (untuk melihat log scan & debug kendala/error).
+* `apiUrl`: URL backend server.
+  * Localhost: `http://localhost:5050/api/v1`
+  * Cloud Render: `https://api-presensi-anda.onrender.com/api/v1`
+* `apiKey`: Kunci otentikasi scanner (disamakan dengan `SCANNER_API_KEY` di server).
+* `gate`: Label kode gerbang (misal `"GERBANG_UTAMA"` atau dikosongkan `""`).
+* `mode`: Mode pembacaan scanner:
+  * `"AUTO"` *(Direkomendasikan)*: Membaca scanner USB Keyboard **dan** Serial COM sekaligus.
+  * `"KEYBOARD"`: Hanya membaca scanner USB Keyboard / HID.
+  * `"COM"`: Hanya membaca scanner port Serial / Virtual COM.
+* `port`: Port serial (`"AUTO"` untuk deteksi otomatis seluruh port yang dicolokkan, atau sebutkan spesifik misal `"COM3"`).
+* `baudRate`: Kecepatan komunikasi serial (default: `9600`).
+* `debounceSeconds`: Jeda waktu (detik) untuk mengabaikan scan kartu yang sama berturut-turut.
 
-## Kalau internet mati
+---
 
-Scan tetap tercatat. Agent menyimpannya di `antrean.sqlite` (tahan mati listrik)
-dan mengirimkannya begitu server bisa dihubungi. **Jam scan aslinya yang
-tersimpan**, bukan jam pengiriman — jadi siswa yang datang 06:50 tetap tercatat
-06:50 meski baru terkirim pukul 09:00.
+## Cara Menjalankan
 
-## Membaca log
-
-| | |
-|---|---|
-| Windows | `type log\agent.log` |
-| Linux | `journalctl -u presensee-scanner-agent -f` |
-
-Yang perlu diperhatikan di log:
-
-- `OFFLINE — scan ditampung di antrean lokal` — server tidak terjangkau. Wajar
-  sesaat; kalau berjam-jam, periksa jaringan.
-- `Belum ada scanner yang dipetakan` — agent jalan tapi belum diberi nama di aplikasi.
-- `X-Api-Key ditolak server` — `apiKey` di config.json salah.
-- `gagal membuka /dev/ttyACM0` di Linux — pengguna belum masuk grup `dialout`.
-
-## Masalah yang sering terjadi
-
-**`npm run ports` kosong.** Scanner masih mode keyboard. Ubah lewat barcode setup
-di buku manualnya.
-
-**Di Linux semua port gagal dibuka.** Pengguna belum di grup `dialout`:
-`sudo usermod -aG dialout $USER`, lalu logout-login.
-
-**Scanner tidak punya nomor seri.** Agent tetap jalan, tapi pemetaannya ikut
-lokasi colokan USB — **jangan pindahkan colokannya**, karena pemetaannya akan
-tertukar. Halaman Scanner menandai kondisi ini dengan peringatan.
+1. Salin folder `apps/scanner-agent` ini ke PC/laptop di pos satpam / gerbang.
+2. Jika berkas `AgenScanner.exe` belum ada, klik ganda `RakitAplikasi.bat` sekali (proses kompilasi hanya butuh 2 detik).
+3. Buka `config.json` dengan Notepad dan sesuaikan `apiUrl`.
+4. Klik ganda **`AgenScanner.exe`** untuk menjalankan scanner.
+   * Secara default (`"showConsole": false`), aplikasi langsung aktif di latar belakang tanpa memunculkan jendela hitam.
+5. Jika ingin mematikan agen: Klik ganda **`HentikanAgen.bat`**.
+6. Jika ada kendala pembacaan kartu: Buka `config.json`, ubah `"showConsole": true`, matikan agen lama via `HentikanAgen.bat`, lalu klik ganda `AgenScanner.exe` lagi untuk melihat log secara live.

@@ -1,5 +1,6 @@
 packages:
-  - 'apps/*'
+  - 'apps/api'
+  - 'apps/web'
   - 'packages/*'
 
 # pnpm 11: hanya paket di daftar ini yang boleh menjalankan build script saat install.
@@ -14,6 +15,5 @@ allowBuilds:
   '@node-rs/argon2': true
   '@whiskeysockets/baileys': true
   protobufjs: true
-  '@serialport/bindings-cpp': true
 minimumReleaseAgeExclude:
   - lucide-react@1.43.0

@@ -20,6 +20,12 @@ const PUBLIK = ['/login'];
  */
 export function middleware(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
+
+  // Rute API dan socket.io tidak diproses oleh middleware proteksi halaman web
+  if (pathname.startsWith('/api') || pathname.startsWith('/socket.io')) {
+    return NextResponse.next();
+  }
+
   const punyaCookie = req.cookies.has(NAMA_COOKIE);
   const halamanPublik = PUBLIK.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 
@@ -53,6 +59,6 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  // Berkas statis, gambar, dan berkas khusus Next tidak perlu diperiksa.
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)'],
+  // Berkas statis, gambar, rute API, socket.io, dan berkas khusus Next tidak perlu diperiksa.
+  matcher: ['/((?!api|socket\\.io|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)'],
 };

@@ -19,6 +19,8 @@ export const skemaPresensi = z.object({
   batas_akhir_masuk: jam.optional().nullable(),
   /** Batas akhir menolak scan pulang. (Opsional, kosong = tidak ada batas) */
   batas_akhir_pulang: jam.optional().nullable(),
+  /** Otomatis tandai ALPA pada jam batas alpa */
+  auto_alpa_aktif: z.boolean().default(true),
   /** 0=Minggu … 6=Sabtu */
   hari_sekolah: z.array(z.number().int().min(0).max(6)).min(1),
   /** Override per hari; hanya kunci yang ditulis yang menimpa nilai utama. */
@@ -32,6 +34,7 @@ export const skemaPresensi = z.object({
         jam_pulang: jam.optional(),
         batas_akhir_masuk: jam.optional().nullable(),
         batas_akhir_pulang: jam.optional().nullable(),
+        auto_alpa_aktif: z.boolean().optional(),
       }),
     )
     .default({}),
@@ -70,8 +73,8 @@ export const skemaWhatsapp = z
   });
 export type Whatsapp = z.infer<typeof skemaWhatsapp>;
 
-export const skemaTemplateWa = z.record(z.enum(KEJADIAN_WA), z.string().min(1));
-export type TemplateWa = z.infer<typeof skemaTemplateWa>;
+export const skemaTemplateWa = z.record(z.string(), z.string().min(1));
+export type TemplateWa = Record<string, string>;
 
 /** Satu titik scan: scanner serial atau kamera. */
 export const skemaScanner = z.object({

@@ -7,7 +7,6 @@ import {
   ScanLineIcon,
   SettingsIcon,
   ShieldUserIcon,
-  UsbIcon,
   UsersRoundIcon,
 } from 'lucide-react';
 import type { Peran } from '@siklon/shared';
@@ -64,7 +63,6 @@ export const NAVIGASI: GrupNav[] = [
   {
     judul: 'Sistem',
     item: [
-      { href: '/scanner', label: 'Scanner', Ikon: UsbIcon, siap: true },
       { href: '/whatsapp', label: 'WhatsApp', Ikon: MessageCircleIcon, siap: true },
       { href: '/pengaturan', label: 'Pengaturan', Ikon: SettingsIcon, siap: true },
       {

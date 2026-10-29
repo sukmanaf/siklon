@@ -5,7 +5,20 @@ import { io, type Socket } from 'socket.io-client';
 import { URL_API } from '@/lib/api';
 
 /** Server memasang Socket.IO di root, bukan di bawah /api/v1. */
-const URL_SOCKET = URL_API.replace(/\/api\/v\d+\/?$/, '');
+function dapatkanUrlSocket(): string {
+  if (URL_API.startsWith('http://') || URL_API.startsWith('https://')) {
+    return URL_API.replace(/\/api\/v\d+\/?$/, '');
+  }
+  if (typeof window !== 'undefined') {
+    // Pada mode dev lokal di port 3000, arahkan Socket.IO langsung ke server API port 4000
+    // agar koneksi WebSocket tidak terputus oleh batasan proxy Next.js.
+    if (window.location.port === '3000') {
+      return `${window.location.protocol}//${window.location.hostname}:4000`;
+    }
+    return window.location.origin;
+  }
+  return 'http://localhost:4000';
+}
 
 export type StatusSambungan = 'menyambung' | 'tersambung' | 'terputus';
 
@@ -49,7 +62,8 @@ export function useSocket(pendengar: Pendengar, aktif = true) {
   useEffect(() => {
     if (!aktif) return;
 
-    const socket = io(URL_SOCKET, {
+    const socketUrl = dapatkanUrlSocket();
+    const socket = io(socketUrl, {
       withCredentials: true,
       path: '/socket.io',
       reconnectionDelay: 1000,

@@ -183,6 +183,14 @@ export function useKirimUlangSemuaGagal() {
   });
 }
 
+export function useBatalkanSemuaAntrean() {
+  const segarkan = useSegarkanWa();
+  return useMutation({
+    mutationFn: () => api.post<{ pesan: string; jumlah: number }>('/wa/messages/cancel-queued'),
+    onSuccess: segarkan,
+  });
+}
+
 export type NomorBermasalah = {
   nomor?: string;
   [k: string]: unknown;
@@ -204,5 +212,7 @@ export const KEJADIAN_LABEL: Record<KejadianWa, { judul: string; jelas: string }
   },
   TERLAMBAT: { judul: 'Siswa terlambat', jelas: 'Dikirim saat scan melewati batas terlambat.' },
   ALPA: { judul: 'Siswa tidak hadir', jelas: 'Dikirim sekali setelah batas alpa terlewat.' },
+  IZIN: { judul: 'Siswa izin', jelas: 'Dikirim saat presensi ditandai sebagai IZIN.' },
+  SAKIT: { judul: 'Siswa sakit', jelas: 'Dikirim saat presensi ditandai sebagai SAKIT.' },
   REKAP: { judul: 'Rekap berkala', jelas: 'Ringkasan kehadiran yang dikirim berkala.' },
 };

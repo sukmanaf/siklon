@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Loader2Icon, RotateCcwIcon } from 'lucide-react';
-import { KEJADIAN_WA, type KejadianWa, type TemplateWa } from '@siklon/shared';
+import { DEFAULT_TEMPLATE_WA, KEJADIAN_WA, type KejadianWa, type TemplateWa } from '@siklon/shared';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardHint, CardTitle } from '@/components/ui/card';
@@ -25,6 +25,7 @@ const VARIABEL: { nama: string; jelas: string; untuk?: KejadianWa[] }[] = [
   { nama: 'tanggal', jelas: 'Selasa, 8 September 2026' },
   { nama: 'jam', jelas: 'Jam scan, mis. 07:22' },
   { nama: 'menit', jelas: 'Menit keterlambatan', untuk: ['TERLAMBAT'] },
+  { nama: 'catatan', jelas: 'Keterangan atau alasan presensi', untuk: ['IZIN', 'SAKIT', 'ALPA', 'MASUK', 'TERLAMBAT'] },
   { nama: 'sekolah', jelas: 'Nama sekolah dari Pengaturan' },
   { nama: 'bulan', jelas: 'Periode rekap', untuk: ['REKAP'] },
   { nama: 'hadir', jelas: 'Jumlah hadir', untuk: ['REKAP'] },
@@ -52,8 +53,8 @@ export function TabTemplate() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setting.data]);
 
-  const isi = draf[kejadian] ?? '';
-  const berubah = isi !== (tersimpan[kejadian] ?? '');
+  const isi = draf[kejadian] ?? DEFAULT_TEMPLATE_WA[kejadian] ?? '';
+  const berubah = isi !== (tersimpan[kejadian] ?? DEFAULT_TEMPLATE_WA[kejadian] ?? '');
 
   /** Sisipkan {variabel} tepat di posisi kursor, bukan di ujung teks. */
   function sisipkan(nama: string) {
@@ -84,6 +85,7 @@ export function TabTemplate() {
     tanggal: 'Selasa, 8 September 2026',
     jam: '07:22',
     menit: '12',
+    catatan: 'Surat dokter',
     sekolah: (setting.data?.sekolah?.nama as string) ?? 'SMP Negeri 1 Contoh',
     bulan: 'September 2026',
     hadir: '18',
@@ -93,9 +95,21 @@ export function TabTemplate() {
     alpa: '1',
     persen: '90.9',
   };
+  function uraiSpintax(teks: string): string {
+    let hasil = teks;
+    const pola = /\{([^{}]+?\|[^{}]+?)\}/g;
+    while (pola.test(hasil)) {
+      hasil = hasil.replace(pola, (_, opsi: string) => {
+        const pilihan = opsi.split('|');
+        return (pilihan[0] ?? '').trim();
+      });
+    }
+    return hasil;
+  }
+
   // Placeholder tak dikenal DIBIARKAN apa adanya — sama seperti backend, supaya
   // salah tulis langsung terlihat di pratinjau, bukan jadi teks kosong.
-  const pratinjauLokal = isi.replace(/\{(\w+)\}/g, (utuh, k: string) => contoh[k] ?? utuh);
+  const pratinjauLokal = uraiSpintax(isi).replace(/\{(\w+)\}/g, (utuh, k: string) => contoh[k] ?? utuh);
   const takDikenal = [...isi.matchAll(/\{(\w+)\}/g)]
     .map((m) => m[1]!)
     .filter((k) => !(k in contoh));
@@ -200,6 +214,13 @@ export function TabTemplate() {
             Bungkus teks dengan tanda bintang untuk menebalkannya di WhatsApp — mis.{' '}
             <span className="font-mono">*{'{siswa}'}*</span>.
           </p>
+
+          <div className="rounded-md border border-primary/20 bg-primary-soft/50 p-2.5 text-[11.5px] leading-relaxed text-foreground">
+            <b>🛡️ Fitur Anti-Spam (Spintax):</b> Gunakan kurung kurawal bergaris tegak{' '}
+            <span className="font-mono">{'{kata1|kata2|kata3}'}</span> untuk memvariasikan kalimat/salam secara otomatis per siswa (contoh:{' '}
+            <span className="font-mono">{`{Assalamu'alaikum|Selamat pagi|Yth.}`}</span> atau{' '}
+            <span className="font-mono">{`{telah HADIR|sudah sampai|tercatat hadir}`}</span>).
+          </div>
         </CardContent>
       </Card>
 

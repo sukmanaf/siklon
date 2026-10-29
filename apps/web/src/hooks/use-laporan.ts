@@ -186,7 +186,7 @@ export function useDashboard(tanggal?: string) {
 export function useUbahStatusPresensi() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { presensiId: string; status: StatusPresensi; catatan: string; jamMasuk?: string; jamPulang?: string }) => api.post<{ id: string }>(`/attendance/${data.presensiId}/update`, data),
+    mutationFn: (data: { presensiId: string; status: StatusPresensi; catatan: string; jamMasuk?: string; jamPulang?: string; kirimWa?: boolean }) => api.post<{ id: string }>(`/attendance/${data.presensiId}/update`, data),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: kunci.presensi.akar });
       void qc.invalidateQueries({ queryKey: kunci.laporan.akar });
@@ -199,7 +199,28 @@ export function useUbahStatusPresensi() {
 export function useTandaiTanpaScan() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { siswaId: string; tanggal: string; status: 'IZIN' | 'SAKIT' | 'ALPA' | 'HADIR' | 'TERLAMBAT'; catatan: string; jamMasuk?: string; jamPulang?: string }) => api.post<{ id: string }>('/attendance/tandai', data),
+    mutationFn: (data: { siswaId: string; tanggal: string; status: 'IZIN' | 'SAKIT' | 'ALPA' | 'HADIR' | 'TERLAMBAT'; catatan: string; jamMasuk?: string; jamPulang?: string; kirimWa?: boolean }) => api.post<{ id: string }>('/attendance/tandai', data),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: kunci.presensi.akar });
+      void qc.invalidateQueries({ queryKey: kunci.laporan.akar });
+      void qc.invalidateQueries({ queryKey: kunci.dashboard.akar });
+    },
+  });
+}
+
+/** Jalankan penandaan ALPA otomatis (untuk siswa yang belum absen). */
+export function useJalankanAutoAlpa() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data?: { tanggal?: string; paksa?: boolean }) =>
+      api.post<{
+        ok: boolean;
+        totalBelum: number;
+        ditandaiAlpa: number;
+        waDiantrekan: number;
+        alasan?: string;
+        pesan?: string;
+      }>('/attendance/auto-alpa', data ?? {}),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: kunci.presensi.akar });
       void qc.invalidateQueries({ queryKey: kunci.laporan.akar });

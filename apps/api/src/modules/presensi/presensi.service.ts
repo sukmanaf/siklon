@@ -7,9 +7,11 @@ function combineDateAndTime(dateObj: Date, timeStr?: string): Date | null {
   return new Date(`${yyyy}-${mm}-${dd}T${timeStr}:00+07:00`);
 }
 
+import type { KejadianWa } from '@siklon/shared';
 import { prisma } from '../../lib/prisma.js';
 import { BadRequest, NotFound } from '../../lib/errors.js';
 import { jamLokal, kolomDateKeTanggal, tanggalKeKolomDate } from '../../lib/waktu.js';
+import { antrekanAman } from '../whatsapp/antrean.service.js';
 
 /**
  * Presensi satu kelas pada satu tanggal.
@@ -95,7 +97,13 @@ export async function harian(tanggal: string, kelasId?: string) {
 
 export async function ubahStatus(
   presensiId: bigint,
-  data: { status: 'IZIN' | 'SAKIT' | 'ALPA' | 'HADIR' | 'TERLAMBAT'; catatan: string; jamMasuk?: string; jamPulang?: string },
+  data: {
+    status: 'IZIN' | 'SAKIT' | 'ALPA' | 'HADIR' | 'TERLAMBAT';
+    catatan: string;
+    jamMasuk?: string;
+    jamPulang?: string;
+    kirimWa?: boolean;
+  },
   olehUserId: string,
 ) {
   const ada = await prisma.attendance.findUnique({ where: { id: presensiId } });
@@ -125,10 +133,36 @@ export async function ubahStatus(
     }
   }
 
-  return prisma.attendance.update({
+  const updated = await prisma.attendance.update({
     where: { id: presensiId },
     data: updateData,
   });
+
+  if (data.kirimWa) {
+    const kejadianMap: Record<string, KejadianWa> = {
+      HADIR: 'MASUK',
+      TERLAMBAT: 'TERLAMBAT',
+      ALPA: 'ALPA',
+      IZIN: 'IZIN',
+      SAKIT: 'SAKIT',
+    };
+    const kejadian = kejadianMap[data.status] ?? 'MASUK';
+    const tglPresensi = ada.attendance_date ? new Date(ada.attendance_date) : new Date();
+    const sekarang = new Date();
+    tglPresensi.setHours(sekarang.getHours(), sekarang.getMinutes(), sekarang.getSeconds());
+
+    await antrekanAman({
+      siswaId: ada.student_id,
+      kejadian,
+      waktu: updateData.check_in_at ?? tglPresensi,
+      menitTerlambat: updateData.late_minutes ?? 0,
+      catatan: data.catatan.trim(),
+      presensiId,
+      abaikanKirimSaat: true,
+    });
+  }
+
+  return updated;
 }
 
 export async function hapusPresensi(id: bigint, userId: string) {
@@ -141,7 +175,13 @@ export async function hapusPresensi(id: bigint, userId: string) {
 export async function tandaiTanpaScan(
   siswaId: string,
   tanggal: string,
-  data: { status: 'IZIN' | 'SAKIT' | 'ALPA' | 'HADIR' | 'TERLAMBAT'; catatan: string; jamMasuk?: string; jamPulang?: string },
+  data: {
+    status: 'IZIN' | 'SAKIT' | 'ALPA' | 'HADIR' | 'TERLAMBAT';
+    catatan: string;
+    jamMasuk?: string;
+    jamPulang?: string;
+    kirimWa?: boolean;
+  },
   olehUserId: string,
 ) {
   const tgl = tanggalKeKolomDate(tanggal);
@@ -157,7 +197,7 @@ export async function tandaiTanpaScan(
   const s = await prisma.students.findUnique({ where: { id: siswaId } });
   if (!s) throw NotFound('Siswa tidak ditemukan');
 
-  return prisma.attendance.upsert({
+  const row = await prisma.attendance.upsert({
     where: {
       student_id_attendance_date: {
         student_id: siswaId,
@@ -186,6 +226,31 @@ export async function tandaiTanpaScan(
       device_code: 'MANUAL',
     },
   });
+
+  if (data.kirimWa) {
+    const kejadianMap: Record<string, KejadianWa> = {
+      HADIR: 'MASUK',
+      TERLAMBAT: 'TERLAMBAT',
+      ALPA: 'ALPA',
+      IZIN: 'IZIN',
+      SAKIT: 'SAKIT',
+    };
+    const kejadian = kejadianMap[data.status] ?? 'MASUK';
+    const tglPresensi = new Date(tgl);
+    const sekarang = new Date();
+    tglPresensi.setHours(sekarang.getHours(), sekarang.getMinutes(), sekarang.getSeconds());
+
+    await antrekanAman({
+      siswaId,
+      kejadian,
+      waktu: checkIn ?? tglPresensi,
+      catatan: data.catatan.trim(),
+      presensiId: row.id,
+      abaikanKirimSaat: true,
+    });
+  }
+
+  return row;
 }
 
 export async function riwayatSiswa(id: string, dari?: string, sampai?: string) {

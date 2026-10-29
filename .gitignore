@@ -1,18 +1,70 @@
+# Dependencies
 node_modules/
+.pnpm-store/
+
+# Production & Build outputs
 dist/
+dist-deploy/
+build/
 .next/
+out/
+apps/api/src/generated/
+*.tsbuildinfo
+
+# Environment & Local Secrets
 .env
 .env.local
+.env.*.local
+!.env.example
+
+# Local storage, database dumps & session caches
 storage/
+data/
+*.sqlite
+*.db
+
+# Logs
 *.log
-*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+scanner.log
+*.old.log
+
+# Operating System files
 .DS_Store
-apps/api/src/generated/
-presensee/
-dist-deploy/
+Thumbs.db
+desktop.ini
+
+# Archives & Large Bundles (Windows Native Packages)
 *.zip
 *.tar
-.claude
-presensee.zip
-.gitignore
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+presensee/
+presensee_native/
+presensee*/
+
+# Generated Binaries & Executables
 *.exe
+*.dll
+*.pdb
+apps/scanner-agent/*.exe
+
+# Scratch & Temporary test files
+scratch/
+tmp/
+temp/
+*.tmp
+
+# Large binary documentation
+*.pdf
+
+# Editor & AI Tool directories
+.claude/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/

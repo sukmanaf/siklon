@@ -36,6 +36,19 @@ const nextConfig: NextConfig = {
   outputFileTracingExcludes: {
     '*': ['**/node_modules/sharp/**', '**/node_modules/@img/**'],
   },
+
+  async rewrites() {
+    return [
+      {
+        source: '/api/v1/:path*',
+        destination: 'http://localhost:4000/api/v1/:path*',
+      },
+      {
+        source: '/socket.io/:path*',
+        destination: 'http://localhost:4000/socket.io/:path*',
+      },
+    ];
+  },
 };
 
 export default nextConfig;

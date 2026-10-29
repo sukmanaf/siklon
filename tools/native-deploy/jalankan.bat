@@ -33,10 +33,24 @@ net session >nul 2>&1
 if not errorlevel 1 set "IS_ADMIN=1"
 
 if "%IS_ADMIN%"=="1" (
-  sc query postgresql-x64-16 | findstr /c:"RUNNING" >nul 2>&1
-  if errorlevel 1 (
-    echo  Menyalakan PostgreSQL...
-    net start postgresql-x64-16 >nul 2>&1
+  sc query PresenSeePostgres >nul 2>&1
+  if not errorlevel 1 (
+    sc query PresenSeePostgres | findstr /c:"RUNNING" >nul 2>&1
+    if errorlevel 1 (
+      echo  Menyalakan PostgreSQL Portable...
+      net start PresenSeePostgres >nul 2>&1
+    )
+  ) else if exist "%~dp0pgsql\bin\pg_ctl.exe" (
+    pushd "%~dp0pgsql\bin"
+    pg_ctl.exe register -N PresenSeePostgres -D "%~dp0database\data" -S auto >nul 2>&1
+    popd
+    net start PresenSeePostgres >nul 2>&1
+  ) else (
+    sc query postgresql-x64-16 | findstr /c:"RUNNING" >nul 2>&1
+    if errorlevel 1 (
+      echo  Menyalakan PostgreSQL...
+      net start postgresql-x64-16 >nul 2>&1
+    )
   )
 
   echo  Memeriksa layanan API...
@@ -53,16 +67,26 @@ if "%IS_ADMIN%"=="1" (
   echo  "Run as administrator" supaya bisa memaksa layanan menyala.^)
 )
 
+REM Pastikan Scanner Agent C# All-in-One juga berjalan
+if exist "%~dp0apps\scanner-agent\AgenScanner.exe" (
+  tasklist /fi "imagename eq AgenScanner.exe" 2>nul | findstr /i "AgenScanner.exe" >nul
+  if errorlevel 1 (
+    echo  Menjalankan Scanner Agent C# All-in-One...
+    start "" "%~dp0apps\scanner-agent\AgenScanner.exe"
+  )
+)
+
 echo.
 echo  Menunggu servicenya siap (5 detik)...
 timeout /t 5 /nobreak >nul
 
 echo  Membuka aplikasi di browser...
-start http://localhost:3000
+start http://localhost:3050
 
 echo.
 echo ====================================================================
-echo   [OK] PresenSee dibuka di browser. Jendela ini boleh ditutup.
+echo   [OK] PresenSee dibuka di browser (http://localhost:3050).
+echo   Jendela ini boleh ditutup.
 echo ====================================================================
 echo.
 pause

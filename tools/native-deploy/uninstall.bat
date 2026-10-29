@@ -49,6 +49,29 @@ echo  Menghentikan dan menghapus layanan API...
 "%NSSM_EXE%" stop PresenSeeApi >nul 2>&1
 "%NSSM_EXE%" remove PresenSeeApi confirm >nul 2>&1
 
+echo  Menghentikan Scanner Agent C#...
+taskkill /f /im AgenScannerRaw.exe >nul 2>&1
+taskkill /f /im AgenScannerCom.exe >nul 2>&1
+reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v "PresenSeeScanner" /f >nul 2>&1
+reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v "PresenSeeScannerCom" /f >nul 2>&1
+
+sc query PresenSeePostgres >nul 2>&1
+if not errorlevel 1 (
+  echo  Menghentikan dan menghapus layanan PostgreSQL Portable...
+  net stop PresenSeePostgres >nul 2>&1
+  "%NSSM_EXE%" stop PresenSeePostgres >nul 2>&1
+  "%NSSM_EXE%" remove PresenSeePostgres confirm >nul 2>&1
+  if exist "%~dp0pgsql\bin\pg_ctl.exe" (
+    pushd "%~dp0pgsql\bin"
+    pg_ctl.exe unregister -N PresenSeePostgres >nul 2>&1
+    popd
+  )
+  sc delete PresenSeePostgres >nul 2>&1
+)
+
+echo  Menghapus jadwal Auto-Backup...
+schtasks /delete /tn "PresenSeeAutoBackup" /f >nul 2>&1
+
 echo.
 echo ====================================================================
 echo   [OK] Layanan PresenSee dicopot. Database TIDAK disentuh.

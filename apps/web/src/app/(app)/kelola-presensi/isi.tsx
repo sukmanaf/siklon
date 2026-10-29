@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { DownloadIcon, FileTextIcon, PaperclipIcon, PencilIcon, UsersRoundIcon, SearchIcon } from 'lucide-react';
+import { ClockIcon, DownloadIcon, FileTextIcon, Loader2Icon, PaperclipIcon, PencilIcon, UsersRoundIcon, SearchIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContentFlush, CardHeader, CardHint, CardTitle } from '@/components/ui/card';
@@ -16,7 +16,8 @@ import { useDaftarKelas } from '@/hooks/use-kelas';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useFilterUrl } from '@/hooks/use-filter-url';
 import { usePresensiHarian, type BarisHarian } from '@/hooks/use-presensi';
-import { unduhan, useRekapHarian, type RekapKelas } from '@/hooks/use-laporan';
+import { unduhan, useJalankanAutoAlpa, useRekapHarian, type RekapKelas } from '@/hooks/use-laporan';
+import { toastGagal, toastSukses } from '@/lib/toast';
 import { hariIni } from '@/lib/tanggal';
 import { cn } from '@/lib/utils';
 import { DialogUbahStatus } from './dialog-ubah-status';
@@ -26,6 +27,7 @@ const SEMUA = '__semua__';
 export function IsiKelolaPresensi() {
   const [filter, setFilter] = useFilterUrl({ tanggal: hariIni(), kelas: SEMUA });
   const kelas = useDaftarKelas();
+  const autoAlpa = useJalankanAutoAlpa();
   const [ubah, setUbah] = useState<BarisHarian | null>(null);
 
   const [teksSiswa, setTeksSiswa] = useState('');
@@ -197,7 +199,36 @@ export function IsiKelolaPresensi() {
           </span>
         )}
 
-        <div className="ml-auto flex gap-2">
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          {r && r.belum > 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={autoAlpa.isPending}
+              onClick={() => {
+                if (confirm(`Tandai ${r.belum} siswa yang belum hadir hari ini sebagai ALPA sekarang?`)) {
+                  autoAlpa.mutate(
+                    { tanggal: filter.tanggal, paksa: true },
+                    {
+                      onSuccess: (res) => {
+                        if (res.ditandaiAlpa > 0) {
+                          const waInfo = res.waDiantrekan > 0 ? ` (${res.waDiantrekan} WA diantrekan)` : '';
+                          toastSukses(`${res.ditandaiAlpa} siswa ditandai ALPA${waInfo}`);
+                        } else {
+                          toastSukses(res.pesan || 'Tidak ada siswa yang ditandai ALPA');
+                        }
+                      },
+                      onError: (e) => toastGagal(e, 'Gagal menjalankan auto ALPA'),
+                    },
+                  );
+                }
+              }}
+            >
+              {autoAlpa.isPending ? <Loader2Icon className="animate-spin" /> : <ClockIcon />}
+              Tandai ALPA ({r.belum})
+            </Button>
+          )}
+
           {/* Excel diunduh — browser tidak bisa menampilkannya. */}
           <Button size="sm" asChild>
             <a href={unduhan.harianExcel(filter.tanggal, kelasId)} download>

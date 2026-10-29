@@ -9,7 +9,10 @@ export type PermintaanAntre = {
   kejadian: KejadianWa;
   waktu: Date;
   menitTerlambat?: number;
+  catatan?: string | null;
   presensiId?: bigint | null;
+  /** Bila true (misal dari ubah status manual), abaikan filter kirim_saat di settings */
+  abaikanKirimSaat?: boolean;
 };
 
 export type HasilAntre =
@@ -26,7 +29,7 @@ export type HasilAntre =
 export async function antrekan(req: PermintaanAntre): Promise<HasilAntre> {
   const wa = await ambilSetting('whatsapp');
 
-  if (!wa.kirim_saat.includes(req.kejadian)) {
+  if (!req.abaikanKirimSaat && !wa.kirim_saat.includes(req.kejadian)) {
     return { diantrekan: false, alasan: `Kejadian ${req.kejadian} tidak diaktifkan di Pengaturan` };
   }
 
@@ -62,6 +65,7 @@ export async function antrekan(req: PermintaanAntre): Promise<HasilAntre> {
     kelas: siswa.classes?.name ?? null,
     waktu: req.waktu,
     menitTerlambat: req.menitTerlambat,
+    catatan: req.catatan,
   });
 
   const baris = await prisma.wa_messages.create({

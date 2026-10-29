@@ -1,4 +1,4 @@
-import { access, mkdir, rename } from 'node:fs/promises';
+import { access, mkdir, rename, rm } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { env } from '../../config/env.js';
 import { logger } from '../../config/logger.js';
@@ -43,14 +43,37 @@ export class BaileysProvider implements WaProvider {
     };
   }
 
+  private async bersihkanSesiMati(): Promise<void> {
+    const dirSesi = resolve(env.WA_SESSION_PATH);
+    const cap = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    try {
+      await rename(dirSesi, `${dirSesi}-lama-${cap}`);
+      logger.info({ arsip: `${dirSesi}-lama-${cap}` }, 'Sesi WhatsApp mati berhasil diarsipkan');
+    } catch {
+      try {
+        await rm(dirSesi, { recursive: true, force: true });
+        logger.info('Folder sesi WhatsApp mati dibersihkan');
+      } catch (e) {
+        logger.warn({ e }, 'Gagal membersihkan folder sesi WhatsApp mati');
+      }
+    }
+  }
+
   async sambungkan(): Promise<void> {
     if (this.sedangSambung || this.tersambung) return;
     this.sedangSambung = true;
 
     try {
+      // Jika sesi sebelumnya dicabut dari HP, bersihkan data sesi lama yang mati
+      // agar Baileys tidak mencoba login dengan kredensial basi, melainkan menerbitkan QR baru.
+      if (this.errorTerakhir?.includes('Sesi dicabut')) {
+        await this.bersihkanSesiMati();
+        this.errorTerakhir = null;
+      }
+
       const baileys = await import('@whiskeysockets/baileys');
       const makeWASocket = (baileys as unknown as { default?: unknown }).default ?? baileys.makeWASocket;
-      const { useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } = baileys;
+      const { useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, Browsers } = baileys;
 
       const dirSesi = resolve(env.WA_SESSION_PATH);
       await mkdir(dirSesi, { recursive: true });
@@ -63,12 +86,16 @@ export class BaileysProvider implements WaProvider {
       const sock = (makeWASocket as (o: unknown) => unknown)({
         auth: state,
         version,
+        browser: Browsers.windows('Chrome'),
         printQRInTerminal: false,
         // Log Baileys sendiri disenyapkan: isinya sangat berisik dan bisa
         // memuat metadata percakapan yang tidak perlu masuk log kita.
         logger: logger.child({ modul: 'baileys' }, { level: 'silent' }),
-        markOnlineOnConnect: false,
+        markOnlineOnConnect: true,
         syncFullHistory: false,
+        connectTimeoutMs: 60_000,
+        defaultQueryTimeoutMs: 30_000,
+        keepAliveIntervalMs: 30_000,
       });
       this.sock = sock;
 
@@ -108,6 +135,8 @@ export class BaileysProvider implements WaProvider {
           if (kode === DisconnectReason.loggedOut) {
             this.errorTerakhir = 'Sesi dicabut dari HP. Perlu scan QR pairing ulang.';
             logger.error(this.errorTerakhir);
+            this.sedangSambung = false;
+            void this.bersihkanSesiMati();
           } else {
             this.errorTerakhir = `Koneksi terputus (kode ${kode ?? '-'}), mencoba menyambung ulang`;
             logger.warn(this.errorTerakhir);
@@ -166,15 +195,9 @@ export class BaileysProvider implements WaProvider {
    */
   async hapusSesi(): Promise<void> {
     await this.putuskan();
-
-    const dirSesi = resolve(env.WA_SESSION_PATH);
-    const cap = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-    try {
-      await rename(dirSesi, `${dirSesi}-lama-${cap}`);
-      logger.info({ arsip: `${dirSesi}-lama-${cap}` }, 'Sesi WhatsApp diarsipkan');
-    } catch {
-      // Folder belum pernah dibuat — tidak ada yang perlu diarsipkan.
-    }
+    // Beri jeda sejenak agar proses dan handle berkas di Windows tertutup
+    await new Promise((r) => setTimeout(r, 200));
+    await this.bersihkanSesiMati();
 
     this.qrTerakhir = null;
     this.errorTerakhir = null;
@@ -200,29 +223,47 @@ export class BaileysProvider implements WaProvider {
     }
 
     const sock = this.sock as {
-      onWhatsApp?: (n: string) => Promise<{ exists?: boolean }[] | undefined>;
+      sendPresenceUpdate?: (type: 'available' | 'unavailable' | 'composing' | 'recording' | 'paused', toJid?: string) => Promise<void>;
+      presenceSubscribe?: (toJid: string) => Promise<void>;
       sendMessage: (jid: string, isi: { text: string }) => Promise<{ key?: { id?: string } } | undefined>;
     };
 
+    const jid = `${nomor}@s.whatsapp.net`;
+
     try {
-      // Diperiksa dulu apakah nomornya benar-benar punya WhatsApp. Tanpa ini,
-      // nomor salah tulis akan dicoba ulang tiga kali dengan sia-sia dan
-      // menghabiskan kuota harian.
-      const cek = await sock.onWhatsApp?.(nomor);
-      if (cek && cek.length > 0 && cek[0]?.exists === false) {
-        return {
-          ok: false,
-          kode: 'NOMOR_TIDAK_TERDAFTAR',
-          pesan: `Nomor ${nomor} tidak terdaftar di WhatsApp`,
-        };
+      // 1. Simulasi kehadiran manusia & status mengetik (Anti-Bot Detection)
+      // Jangan gunakan sock.onWhatsApp() karena probe nomor memicu kecurigaan spam Meta.
+      try {
+        await sock.sendPresenceUpdate?.('available');
+        await sock.presenceSubscribe?.(jid);
+        await sock.sendPresenceUpdate?.('composing', jid);
+
+        // Jeda mengetik alami (1.5 - 3.5 detik) seolah manusia sedang mengetik
+        const jedaKetik = Math.min(3500, Math.max(1200, Math.floor(isi.length * 12 + Math.random() * 800)));
+        await new Promise((r) => setTimeout(r, jedaKetik));
+
+        await sock.sendPresenceUpdate?.('paused', jid);
+      } catch (errPresensi) {
+        logger.debug({ err: errPresensi }, 'Gagal mengirim presence composing WA');
       }
 
-      const hasil = await sock.sendMessage(`${nomor}@s.whatsapp.net`, { text: isi });
+      // 2. Kirim pesan dengan batas waktu (timeout 25 detik)
+      const kirimPromise = sock.sendMessage(jid, { text: isi });
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Timeout pengiriman WhatsApp (25 detik)')), 25_000),
+      );
+
+      const hasil = await Promise.race([kirimPromise, timeoutPromise]);
       return { ok: true, providerMessageId: hasil?.key?.id ?? `wa-${Date.now()}` };
     } catch (err) {
-      const pesan = (err as Error).message;
+      const pesan = (err as Error).message || '';
       logger.warn({ err, nomor }, 'Gagal mengirim pesan WhatsApp');
-      return { ok: false, kode: 'TIDAK_DIKETAHUI', pesan };
+      const tidakTerdaftar = /not-authorized|item-not-found|not registered|not on whatsapp|404/i.test(pesan);
+      return {
+        ok: false,
+        kode: tidakTerdaftar ? 'NOMOR_TIDAK_TERDAFTAR' : 'TIDAK_DIKETAHUI',
+        pesan,
+      };
     }
   }
 

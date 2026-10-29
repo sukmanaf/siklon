@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { InboxIcon, Loader2Icon, RefreshCwIcon } from 'lucide-react';
+import { BanIcon, InboxIcon, Loader2Icon, RefreshCwIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContentFlush, CardHeader, CardHint, CardTitle } from '@/components/ui/card';
@@ -23,6 +23,7 @@ import {
   useDetailPesanWa,
   useKirimUlangPesan,
   useKirimUlangSemuaGagal,
+  useBatalkanSemuaAntrean,
   type PesanWa,
 } from '@/hooks/use-wa';
 import { toastGagal, toastSukses } from '@/lib/toast';
@@ -43,6 +44,7 @@ export function TabLog() {
   const [halaman, setHalaman] = useState(1);
   const [lihatId, setLihatId] = useState<string | null>(null);
   const [konfirmasiUlang, setKonfirmasiUlang] = useState(false);
+  const [konfirmasiBatal, setKonfirmasiBatal] = useState(false);
 
   const daftar = useDaftarPesanWa({
     status: status === SEMUA ? undefined : status,
@@ -52,6 +54,7 @@ export function TabLog() {
   const detail = useDetailPesanWa(lihatId);
   const ulangSatu = useKirimUlangPesan();
   const ulangSemua = useKirimUlangSemuaGagal();
+  const batalkanSemua = useBatalkanSemuaAntrean();
 
   const kolom: Kolom<PesanWa>[] = [
     {
@@ -165,6 +168,16 @@ export function TabLog() {
                 <SelectItem value="CANCELLED">Dibatalkan</SelectItem>
               </SelectContent>
             </Select>
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-alpa/40 text-alpa hover:bg-alpa-bg hover:text-alpa"
+              onClick={() => setKonfirmasiBatal(true)}
+              disabled={batalkanSemua.isPending}
+            >
+              {batalkanSemua.isPending ? <Loader2Icon className="animate-spin" /> : <BanIcon />}
+              Batalkan antrean
+            </Button>
             <Button size="sm" onClick={() => setKonfirmasiUlang(true)} disabled={ulangSemua.isPending}>
               {ulangSemua.isPending ? <Loader2Icon className="animate-spin" /> : <RefreshCwIcon />}
               Kirim ulang yang gagal
@@ -261,6 +274,25 @@ export function TabLog() {
               setKonfirmasiUlang(false);
             },
             onError: (e) => toastGagal(e, 'Gagal mengantrekan ulang'),
+          })
+        }
+      />
+
+      <ConfirmDialog
+        open={konfirmasiBatal}
+        onOpenChange={setKonfirmasiBatal}
+        judul="Batalkan semua antrean pesan?"
+        deskripsi="Semua pesan yang saat ini masih berstatus 'Dalam antrean' akan ditandai Dibatalkan dan tidak akan dikirimkan saat WhatsApp tersambung."
+        labelKonfirmasi="Ya, batalkan antrean"
+        berbahaya
+        memuat={batalkanSemua.isPending}
+        onKonfirmasi={() =>
+          batalkanSemua.mutate(undefined, {
+            onSuccess: (h) => {
+              toastSukses(h.pesan);
+              setKonfirmasiBatal(false);
+            },
+            onError: (e) => toastGagal(e, 'Gagal membatalkan antrean'),
           })
         }
       />

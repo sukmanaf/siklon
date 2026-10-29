@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatusBadge } from '@/components/status-badge';
+import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableWrap } from '@/components/ui/table';
 import { useSimpanSetting } from '@/hooks/use-pengaturan';
 import { selisihMenit, tambahMenit } from '@/lib/tanggal';
@@ -139,6 +140,20 @@ export function TabJadwal({ awal }: { awal: Presensi }) {
               />
               <p className="max-w-48 text-[11.5px] leading-relaxed text-muted-foreground">
                 Belum scan sampai jam ini → <b>ALPA</b> dan wali dikabari.
+              </p>
+            </div>
+
+            <div className="space-y-1.5 min-w-[150px]">
+              <div className="flex items-center justify-between gap-3 pt-0.5">
+                <Label htmlFor="auto-alpa">Auto ALPA</Label>
+                <Switch
+                  id="auto-alpa"
+                  checked={nilai.auto_alpa_aktif ?? true}
+                  onCheckedChange={(c) => ubah('auto_alpa_aktif', c)}
+                />
+              </div>
+              <p className="max-w-48 text-[11.5px] leading-relaxed text-muted-foreground">
+                Tandai ALPA otomatis untuk siswa yang belum hadir pada jam batas alpa.
               </p>
             </div>
 
