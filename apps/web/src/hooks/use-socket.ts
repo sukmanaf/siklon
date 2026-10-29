@@ -6,6 +6,9 @@ import { URL_API } from '@/lib/api';
 
 /** Server memasang Socket.IO di root, bukan di bawah /api/v1. */
 function dapatkanUrlSocket(): string {
+  if (process.env.NEXT_PUBLIC_SOCKET_URL) {
+    return process.env.NEXT_PUBLIC_SOCKET_URL.replace(/\/+$/, '');
+  }
   if (URL_API.startsWith('http://') || URL_API.startsWith('https://')) {
     return URL_API.replace(/\/api\/v\d+\/?$/, '');
   }

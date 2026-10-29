@@ -38,14 +38,21 @@ const nextConfig: NextConfig = {
   },
 
   async rewrites() {
+    const apiDestination = (process.env.API_BACKEND_URL || 'http://localhost:4000/api/v1').replace(/\/+$/, '');
+    const socketDestination = (
+      process.env.NEXT_PUBLIC_SOCKET_URL ||
+      process.env.API_BACKEND_URL?.replace(/\/api\/v\d+\/?$/, '') ||
+      'http://localhost:4000'
+    ).replace(/\/+$/, '');
+
     return [
       {
         source: '/api/v1/:path*',
-        destination: 'http://localhost:4000/api/v1/:path*',
+        destination: `${apiDestination}/:path*`,
       },
       {
         source: '/socket.io/:path*',
-        destination: 'http://localhost:4000/socket.io/:path*',
+        destination: `${socketDestination}/socket.io/:path*`,
       },
     ];
   },
