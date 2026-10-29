@@ -16,7 +16,7 @@ if (existsSync('.env')) process.loadEnvFile('.env');
 export default defineConfig({
   schema: 'prisma/schema.prisma',
   datasource: {
-    url: env('DATABASE_URL'),
+    url: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/presensi_sekolah',
   },
   migrations: {
     path: 'prisma/migrations',
